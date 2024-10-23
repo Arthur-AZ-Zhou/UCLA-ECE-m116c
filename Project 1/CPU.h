@@ -4,10 +4,20 @@
 #include <iostream>
 #include <bitset>
 #include <stdio.h>
-#include<stdlib.h>
+#include <stdlib.h>
 #include <string>
+#include <unordered_map>
 using namespace std;
 
+enum types {
+	Rtype, Itype, Stype, Btype, Utype, Jtype
+};
+
+enum op {
+	ADD, LUI, ORI, XOR, SRAI, LB, LW, SB, SW, BEQ, JAL
+};
+
+extern unordered_map<string, types> opcodeMap;
 
 class Instruction { //32 bit string
 public:
@@ -19,13 +29,26 @@ public:
 class CPU {
 public:
 	CPU();
-	unsigned long readPC();
-	void incPC();
+	unsigned long readPC() { return PC; };
+	void incPC() { PC++; };
+	void decode(Instruction* instruction);
+	types getOpcode() { return opcode; };
+	op getOperation() { return operation; };
 
 private:
 	int dmemory[4096]; //data memory byte addressable in little endian fashion;
 	unsigned long PC; //pc 
 
+	types opcode;
+	op operation;
+	uint32_t funct7;
+    uint32_t funct3;
+	uint32_t rs1;
+	uint32_t rs2;
+	uint32_t rd;
+	uint32_t imm;
+	uint32_t shamt;
+	uint32_t aluRes;
 };
 
 // add other functions and objects here

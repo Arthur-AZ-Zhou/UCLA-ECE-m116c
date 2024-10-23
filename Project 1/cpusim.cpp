@@ -106,11 +106,36 @@ int main(int argc, char* argv[]) {
 		cout << "32-bit decoded instr: " << myInst.instr.to_string() << endl;
 
 		//decode------------------------------------------------------------------------------
+		myCPU.decode(&myInst);
 		
+		// switch (myCPU.getOpcode()) {
+		// 	case Rtype:
+		// 		std::cout << "Opcode Type is R-type." << std::endl;
+		// 		break;
+		// 	case Itype:
+		// 		std::cout << "Opcode Type is I-type." << std::endl;
+		// 		break;
+		// 	case Stype:
+		// 		std::cout << "Opcode Type is S-type." << std::endl;
+		// 		break;
+		// 	case Btype:
+		// 		std::cout << "Opcode Type is B-type." << std::endl;
+		// 		break;
+		// 	case Utype:
+		// 		std::cout << "Opcode Type is U-type." << std::endl;
+		// 		break;
+		// 	case Jtype:
+		// 		std::cout << "Opcode Type is J-type." << std::endl;
+		// 		break;
+		// 	default:
+		// 		std::cout << "Unknown Opcode Type." << std::endl;
+		// 		break;
+    	// }
 
 		//execute-----------------------------------------------------------------------------
 		
 		//cleanup-----------------------------------------------------------------------------
+		cout << "=========================================================" << endl;
 		myCPU.incPC();
 		if (myCPU.readPC() >= maxPC)
 			break;
