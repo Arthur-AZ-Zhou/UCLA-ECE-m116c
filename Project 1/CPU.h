@@ -32,6 +32,7 @@ public:
 	void incPC() { PC++; };
 	void decode(Instruction* instruction);
 	void execute();
+	void printRegisters();
 
 	types getOpcode() { return opcode; };
 	op getOperation() { return operation; };
