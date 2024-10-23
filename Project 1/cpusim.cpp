@@ -100,10 +100,10 @@ int main(int argc, char* argv[]) {
 		if (fetched.length() != 8) {
 			break;
 		}
-		cout << "fetched: " << fetched << endl;
+		// cout << "fetched: " << fetched << endl;
 
 		myInst.instr = hexDecoder(fetched);
-		cout << "32-bit decoded instr: " << myInst.instr.to_string() << endl;
+		// cout << "32-bit decoded instr: " << myInst.instr.to_string() << endl;
 
 		//decode------------------------------------------------------------------------------
 		myCPU.decode(&myInst);
@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
 		myCPU.execute();
 
 		//cleanup-----------------------------------------------------------------------------
-		cout << "=========================================================" << endl;
+		// cout << "=========================================================" << endl;
 		if (myCPU.readPC() >= maxPC)
 			break;
 	}
