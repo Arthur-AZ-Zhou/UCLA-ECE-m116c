@@ -31,6 +31,11 @@ void CPU::decode(Instruction* instruction) {
         opcode = opcodeMap[opcodeSubstr];
     }
 
+    uint32_t imm1;
+    uint32_t imm2;
+    uint32_t imm3;
+    uint32_t imm4;
+
     switch (opcode) {
         case Rtype:
             cout << "Opcode Type is R-type." << endl;
@@ -87,21 +92,81 @@ void CPU::decode(Instruction* instruction) {
 
             break;
         case Stype:
-            std::cout << "Opcode Type is S-type." << std::endl;
-            
+            cout << "Opcode Type is S-type." << endl;
+            imm1 = bitset<7>(bitString32.substr(0, 7)).to_ulong(); 
+            rs2 = bitset<5>(bitString32.substr(7, 5)).to_ulong();  
+            rs1 = bitset<5>(bitString32.substr(12, 5)).to_ulong(); 
+            funct3 = bitset<3>(bitString32.substr(17, 3)).to_ulong(); 
+            imm2 = bitset<5>(bitString32.substr(20, 5)).to_ulong(); 
+            imm = (imm1 << 5) | imm2;
+			cout << "imm1: " << imm1 << " rs2: " << rs2 << " rs1: " << rs1 << " funct3: " << funct3 << " imm2: " << imm2 << " imm: " << imm << endl;
+
+            if (funct3 == 0) {
+                cout << "operation: SB" << endl;
+                operation = SB;
+            } else if (funct3 == 2) {
+                cout << "operation: SW" << endl;
+                operation = SW;
+            } else {
+                cout << "error, not valid!" << endl;
+            }
 
             break;
         case Btype:
-            std::cout << "Opcode Type is B-type." << std::endl;
+            cout << "Opcode Type is B-type." << endl;
+            imm1 = bitset<1>(bitString32.substr(0, 1)).to_ulong();    
+            imm2 = bitset<6>(bitString32.substr(1, 6)).to_ulong();   
+            rs2 = bitset<5>(bitString32.substr(7, 5)).to_ulong();            
+            rs1 = bitset<5>(bitString32.substr(12, 5)).to_ulong();     
+            funct3 = bitset<3>(bitString32.substr(17, 3)).to_ulong();   
+            imm3 = bitset<4>(bitString32.substr(20, 4)).to_ulong();      
+            imm4 = bitset<1>(bitString32.substr(24, 1)).to_ulong();       
+            imm = (imm1 << 11) | (imm2 << 5) | (imm3 << 1) | imm4;  
+			cout << "imm1: " << imm1 << " imm2: " << imm2 << " rs2: " << rs2 << " rs1: " << rs1 << " funct3: " << funct3 << " imm3: " << imm3 << " imm4: " << imm4;
+            cout << " imm: " << imm << endl;
+
+            if (funct3 == 0) {
+                cout << "operation: BEQ" << endl;
+                operation = BEQ;
+            } else {
+                cout << "error, not valid!" << endl;
+            }
+
             break;
         case Utype:
-            std::cout << "Opcode Type is U-type." << std::endl;
+            cout << "Opcode Type is U-type." << endl;
+            imm = bitset<20>(bitString32.substr(0, 20)).to_ulong();
+			rd = bitset<5>(bitString32.substr(20, 5)).to_ulong();
+			cout << "imm: " << imm << " rd " << rd << endl;
+
+            if (opcodeSubstr == "0110111") {
+                cout << "operation: LUI" << endl;
+                operation = LUI;
+            } else {
+                cout << "error, not valid!" << endl;
+            }
+
             break;
         case Jtype:
-            std::cout << "Opcode Type is J-type." << std::endl;
+            cout << "Opcode Type is J-type." << endl;
+            imm1 = bitset<1>(bitString32.substr(0, 1)).to_ulong();	
+			imm2 = bitset<10>(bitString32.substr(1, 10)).to_ulong(); 
+			imm3 = bitset<1>(bitString32.substr(11, 1)).to_ulong();
+			imm4 = bitset<8>(bitString32.substr(12, 8)).to_ulong(); 
+			rd = bitset<5>(bitString32.substr(20, 5)).to_ulong();
+            imm = (imm1 << 20) | (imm2 << 1) | (imm3 << 11) | imm4;
+			cout << "imm1: " << imm1 << " imm2: " << imm2 << " imm3: " << imm3 << " imm4: " << imm4 << " rd: " << rd << " imm: " << imm << endl;
+
+            if (opcodeSubstr == "1101111") {
+                cout << "operation: JAL" << endl;
+                operation = JAL;
+            } else {
+                cout << "error, not valid!" << endl;
+            }
+
             break;
         default:
-            std::cout << "Unknown Opcode Type." << std::endl;
+            cout << "Unknown Opcode Type." << endl;
             break;
     }
 }
