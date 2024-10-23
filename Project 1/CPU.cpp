@@ -118,38 +118,19 @@ void CPU::decode(Instruction* instruction) {
 
             break;
         case Btype:
-            cout << "Opcode Type is B-type." << endl;  
-            rs2 = bitset<5>(bitString32.substr(7, 5)).to_ulong();            
-            rs1 = bitset<5>(bitString32.substr(12, 5)).to_ulong();     
-            funct3 = bitset<3>(bitString32.substr(17, 3)).to_ulong();   
-            imm1 = (int32_t)(0);
-            imm2 = (int32_t)((bitVal & 0xf00) >> 7); //bits 11 to 7
-            imm3 = (int32_t)((bitVal & 0x7e000000) >> 20); // bits 31 to 25
-            imm4 = (int32_t)((bitVal & 0x80) << 4); // bit 24
-            imm5 = (int32_t)((bitVal & 0x80000000) >> 19); // bit 31
-            imm = (int32_t)(imm1 + imm2 + imm3 + imm4 + imm5);
-            if (imm5) {
-                imm |= 0xfffff000;
-            }
-			cout << "imm1: " << imm1 << " imm2: " << imm2 << " rs2: " << rs2 << " rs1: " << rs1 << " funct3: " << funct3 << " imm3: " << imm3 << " imm4: " << imm4;
-            cout << " imm: " << imm << endl;
-
-            if (funct3 == 0) {
-                cout << "operation: BEQ" << endl;
-                operation = BEQ;
-            } else {
-                cout << "error, not valid!" << endl;
-            }
-
-            // cout << "Opcode Type is B-type." << endl;
-            // imm1 = bitset<1>(bitString32.substr(0, 1)).to_ulong();    
-            // imm2 = bitset<6>(bitString32.substr(1, 6)).to_ulong();   
+            // cout << "Opcode Type is B-type." << endl;  
             // rs2 = bitset<5>(bitString32.substr(7, 5)).to_ulong();            
             // rs1 = bitset<5>(bitString32.substr(12, 5)).to_ulong();     
             // funct3 = bitset<3>(bitString32.substr(17, 3)).to_ulong();   
-            // imm3 = bitset<4>(bitString32.substr(20, 4)).to_ulong();      
-            // imm4 = bitset<1>(bitString32.substr(24, 1)).to_ulong();       
-            // imm = (imm1 << 11) | (imm2 << 5) | (imm3 << 1) | imm4;  
+            // imm1 = (int32_t)(0);
+            // imm2 = (int32_t)((bitVal & 0xf00) >> 7); //bits 11 to 7
+            // imm3 = (int32_t)((bitVal & 0x7e000000) >> 20); // bits 31 to 25
+            // imm4 = (int32_t)((bitVal & 0x80) << 4); // bit 24
+            // imm5 = (int32_t)((bitVal & 0x80000000) >> 19); // bit 31
+            // imm = (int32_t)(imm1 + imm2 + imm3 + imm4 + imm5);
+            // if (imm5) {
+            //     imm |= 0xfffff000;
+            // }
 			// cout << "imm1: " << imm1 << " imm2: " << imm2 << " rs2: " << rs2 << " rs1: " << rs1 << " funct3: " << funct3 << " imm3: " << imm3 << " imm4: " << imm4;
             // cout << " imm: " << imm << endl;
 
@@ -159,6 +140,25 @@ void CPU::decode(Instruction* instruction) {
             // } else {
             //     cout << "error, not valid!" << endl;
             // }
+
+            cout << "Opcode Type is B-type." << endl;
+            imm1 = bitset<1>(bitString32.substr(0, 1)).to_ulong();    
+            imm2 = bitset<6>(bitString32.substr(1, 6)).to_ulong();   
+            rs2 = bitset<5>(bitString32.substr(7, 5)).to_ulong();            
+            rs1 = bitset<5>(bitString32.substr(12, 5)).to_ulong();     
+            funct3 = bitset<3>(bitString32.substr(17, 3)).to_ulong();   
+            imm3 = bitset<4>(bitString32.substr(20, 4)).to_ulong();      
+            imm4 = bitset<1>(bitString32.substr(24, 1)).to_ulong();       
+            imm = (imm1 << 11) | (imm2 << 5) | (imm3 << 1) | imm4;  
+			cout << "imm1: " << imm1 << " imm2: " << imm2 << " rs2: " << rs2 << " rs1: " << rs1 << " funct3: " << funct3 << " imm3: " << imm3 << " imm4: " << imm4;
+            cout << " imm: " << imm << endl;
+
+            if (funct3 == 0) {
+                cout << "operation: BEQ" << endl;
+                operation = BEQ;
+            } else {
+                cout << "error, not valid!" << endl;
+            }
 
             break;
         case Utype:
@@ -176,30 +176,14 @@ void CPU::decode(Instruction* instruction) {
 
             break;
         case Jtype:
-            cout << "Opcode Type is J-type." << endl;
-            imm1 = (int32_t)((bitVal & 0x80000000) >> 11);
-            imm2 = (int32_t)((bitVal & 0x7fe00000) >> 20);
-            imm3 = (int32_t)((bitVal & 0x100000) >> 9);
-            imm4 = (int32_t)((bitVal & 0xff000));
-			rd = bitset<5>(bitString32.substr(20, 5)).to_ulong();
-            imm = imm1 | imm2 | imm3 | imm4;
-            imm = (imm << 11) >> 11;
-			cout << "imm1: " << imm1 << " imm2: " << imm2 << " imm3: " << imm3 << " imm4: " << imm4 << " rd: " << rd << " imm: " << imm << endl;
-
-            if (opcodeSubstr == "1101111") {
-                cout << "operation: JAL" << endl;
-                operation = JAL;
-            } else {
-                cout << "error, not valid!" << endl;
-            }
-
             // cout << "Opcode Type is J-type." << endl;
-            // imm1 = bitset<1>(bitString32.substr(0, 1)).to_ulong();	
-			// imm2 = bitset<10>(bitString32.substr(1, 10)).to_ulong(); 
-			// imm3 = bitset<1>(bitString32.substr(11, 1)).to_ulong();
-			// imm4 = bitset<8>(bitString32.substr(12, 8)).to_ulong(); 
+            // imm1 = (int32_t)((bitVal & 0x80000000) >> 11);
+            // imm2 = (int32_t)((bitVal & 0x7fe00000) >> 20);
+            // imm3 = (int32_t)((bitVal & 0x100000) >> 9);
+            // imm4 = (int32_t)((bitVal & 0xff000));
 			// rd = bitset<5>(bitString32.substr(20, 5)).to_ulong();
-            // imm = (imm1 << 20) | (imm2 << 1) | (imm3 << 11) | imm4;
+            // imm = imm1 | imm2 | imm3 | imm4;
+            // imm = (imm << 11) >> 11;
 			// cout << "imm1: " << imm1 << " imm2: " << imm2 << " imm3: " << imm3 << " imm4: " << imm4 << " rd: " << rd << " imm: " << imm << endl;
 
             // if (opcodeSubstr == "1101111") {
@@ -209,6 +193,22 @@ void CPU::decode(Instruction* instruction) {
             //     cout << "error, not valid!" << endl;
             // }
 
+            cout << "Opcode Type is J-type." << endl;
+            imm1 = bitset<1>(bitString32.substr(0, 1)).to_ulong();	
+			imm2 = bitset<10>(bitString32.substr(1, 10)).to_ulong(); 
+			imm3 = bitset<1>(bitString32.substr(11, 1)).to_ulong();
+			imm4 = bitset<8>(bitString32.substr(12, 8)).to_ulong(); 
+			rd = bitset<5>(bitString32.substr(20, 5)).to_ulong();
+            imm = (imm1 << 20) | (imm2 << 1) | (imm3 << 11) | imm4;
+			cout << "imm1: " << imm1 << " imm2: " << imm2 << " imm3: " << imm3 << " imm4: " << imm4 << " rd: " << rd << " imm: " << imm << endl;
+
+            if (opcodeSubstr == "1101111") {
+                cout << "operation: JAL" << endl;
+                operation = JAL;
+            } else {
+                cout << "error, not valid!" << endl;
+            }
+
             break;
         default:
             cout << "Unknown Opcode Type." << endl;
@@ -217,6 +217,9 @@ void CPU::decode(Instruction* instruction) {
 }
 
 void CPU::execute() {
+    cout << "Current PC: " << std::hex << (int) (PC * 4) << endl;
+    cout << std::dec;
+
     switch (operation) {
         case ADD:
             aluRes = regfile[rs1] + regfile[rs2];
@@ -274,8 +277,10 @@ void CPU::execute() {
 
         case BEQ:
             if (regfile[rs1] == regfile[rs2]) {
+                cout << "EQUAL SO BRANCH" << endl;
                 PC += (imm/4);
             } else {
+                cout << "DO NOT BRANCH NOT EQUAL" << endl;
                 incPC();
             }
             printRegisters();
@@ -288,7 +293,7 @@ void CPU::execute() {
             break;
 
         case JAL:
-            regfile[rd] = PC + 1; //saves return addy
+            regfile[rd] = (PC + 1) * 4; //saves return addy
             PC += (imm/4);
             printRegisters();
             break;
