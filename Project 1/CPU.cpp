@@ -29,7 +29,7 @@ void CPU::decode(Instruction* instruction) {
     // cout << "opcode: " << opcodeSubstr << endl;
 
     if (opcodeMap.find(opcodeSubstr) == opcodeMap.end()) {
-        cout << "opcode not found!" << endl;
+        // cout << "opcode not found!" << endl;
         return;
     } else {
         opcode = opcodeMap[opcodeSubstr];
@@ -58,7 +58,7 @@ void CPU::decode(Instruction* instruction) {
                 // cout << "operation: XOR" << endl;
                 operation = XOR;
             } else { //ERROR
-                cout << "error! Not a valid funct3!" << endl;
+                // cout << "error! Not a valid funct3!" << endl;
             }
 
             break;
@@ -79,7 +79,7 @@ void CPU::decode(Instruction* instruction) {
                     // cout << "operation: SRAI" << endl;
                     operation = SRAI;
                 } else {
-                    cout << "error, not valid!" << endl;
+                    // cout << "error, not valid!" << endl;
                 }
             } else if (opcodeSubstr == "0000011") { //ORI or SRAI
                 if (funct3 == 0) { //LB
@@ -89,10 +89,10 @@ void CPU::decode(Instruction* instruction) {
                     // cout << "operation: LW" << endl;
                     operation = LW;
                 } else {
-                    cout << "error, not valid!" << endl;
+                    // cout << "error, not valid!" << endl;
                 }
             } else {
-                cout << "error, not valid!" << endl;
+                // cout << "error, not valid!" << endl;
             }
 
             break;
@@ -113,7 +113,7 @@ void CPU::decode(Instruction* instruction) {
                 // cout << "operation: SW" << endl;
                 operation = SW;
             } else {
-                cout << "error, not valid!" << endl;
+                // cout << "error, not valid!" << endl;
             }
 
             break;
@@ -157,7 +157,7 @@ void CPU::decode(Instruction* instruction) {
                 // cout << "operation: BEQ" << endl;
                 operation = BEQ;
             } else {
-                cout << "error, not valid!" << endl;
+                // cout << "error, not valid!" << endl;
             }
 
             break;
@@ -171,7 +171,7 @@ void CPU::decode(Instruction* instruction) {
                 // cout << "operation: LUI" << endl;
                 operation = LUI;
             } else {
-                cout << "error, not valid!" << endl;
+                // cout << "error, not valid!" << endl;
             }
 
             break;
@@ -206,12 +206,12 @@ void CPU::decode(Instruction* instruction) {
                 // cout << "operation: JAL" << endl;
                 operation = JAL;
             } else {
-                cout << "error, not valid!" << endl;
+                // cout << "error, not valid!" << endl;
             }
 
             break;
         default:
-            cout << "Unknown Opcode Type." << endl;
+            // cout << "Unknown Opcode Type." << endl;
             break;
     }
 }
@@ -299,15 +299,15 @@ void CPU::execute() {
             break;
 
         default:
-            cout << "idk how you even got here..." << endl;
+            // cout << "idk how you even got here..." << endl;
             break;
     }
 }
 
-void CPU::printRegisters() {
-    cout << "Register Vals: " << endl;
-    for (int32_t i = 0; i < 32; ++i) {
-        std::cout << "| x" << i << ": " << regfile[i] << " ";
-    }
-    cout << endl;
-}
+// void CPU::printRegisters() {
+//     cout << "Register Vals: " << endl;
+//     for (int32_t i = 0; i < 32; ++i) {
+//         std::cout << "| x" << i << ": " << regfile[i] << " ";
+//     }
+//     cout << endl;
+// }

@@ -55,13 +55,13 @@ int main(int argc, char* argv[]) {
 
 	//ERROR HANDLING--------------------------------------------------------------------------------------------------------------------------
 	if (argc < 2) {
-		cout << "No file name entered. Exiting..." << endl;
+		// cout << "No file name entered. Exiting..." << endl;
 		return -1;
 	}
 
 	ifstream infile(argv[1]); //open the file
 	if (!(infile.is_open() && infile.good())) {
-		cout<<"error opening file\n";
+		// cout<<"error opening file\n";
 		return 0; 
 	}
 
@@ -118,7 +118,6 @@ int main(int argc, char* argv[]) {
 	}
 	int a0 = myCPU.get_a0();
 	int a1 = myCPU.get_a1();
-	// print the results (you should replace a0 and a1 with your own variables that point to a0 and a1)
 	cout << "(" << a0 << "," << a1 << ")" << endl;
 	
 	return 0;
