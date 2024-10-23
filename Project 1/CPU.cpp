@@ -171,4 +171,72 @@ void CPU::decode(Instruction* instruction) {
     }
 }
 
-// Add other functions here ... 
+void CPU::execute() {
+    switch (operation) {
+        case ADD:
+            aluRes = regfile[rs1] + regfile[rs2];
+            regfile[rd] = aluRes;
+            incPC();
+            break;
+
+        case XOR:
+            aluRes = regfile[rs1] ^ regfile[rs2];
+            regfile[rd] = aluRes;
+            incPC();
+            break;
+
+        case ORI:
+            aluRes = regfile[rs1] | imm;
+            regfile[rd] = aluRes;
+            incPC();
+            break;
+
+        case SRAI:
+            aluRes = static_cast<int32_t>(regfile[rs1]) >> imm;
+            regfile[rd] = aluRes;
+            incPC();
+            break;
+
+        case LB:
+            regfile[rd] = dmemory[regfile[rs1] + imm];
+            incPC();
+            break;
+
+        case LW:
+            regfile[rd] = *reinterpret_cast<int32_t*>(&dmemory[regfile[rs1] + imm]);
+            incPC();
+            break;
+
+        case SB:
+            dmemory[regfile[rs1] + imm] = regfile[rs2] & 0xff;
+            incPC();
+            break;
+
+        case SW:
+            *reinterpret_cast<int32_t*>(&dmemory[regfile[rs1] + imm]) = regfile[rs2];
+            incPC();
+            break;
+
+        case BEQ:
+            if (regfile[rs1] == regfile[rs2]) {
+                PC += (imm/4);
+            } else {
+                incPC();
+            }
+            break;
+
+        case LUI:
+            regfile[rd] = imm << 12;
+            incPC();
+            break;
+
+        case JAL:
+            regfile[rd] = PC + 1; //saves return addy
+            PC = (imm/4);
+            break;
+
+        default:
+            cout << "idk how you even got here..." << endl;
+            break;
+    }
+}

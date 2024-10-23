@@ -23,7 +23,6 @@ class Instruction { //32 bit string
 public:
 	bitset<32> instr;//instruction
 	Instruction(bitset<32> fetch) : instr(fetch) {}; // constructor
-
 };
 
 class CPU {
@@ -32,11 +31,16 @@ public:
 	unsigned long readPC() { return PC; };
 	void incPC() { PC++; };
 	void decode(Instruction* instruction);
+	void execute();
+
 	types getOpcode() { return opcode; };
 	op getOperation() { return operation; };
+	int32_t get_a0() { return regfile[10]; };
+	int32_t get_a1() { return regfile[11]; };
 
 private:
 	int dmemory[4096]; //data memory byte addressable in little endian fashion;
+	int32_t regfile[32]; // x0 - x31 are each 4 bytes
 	unsigned long PC; //pc 
 
 	types opcode;
