@@ -3,28 +3,57 @@
 #include <iostream>
 #include <bitset>
 #include <stdio.h>
-#include<stdlib.h>
+#include <stdlib.h>
 #include <string>
-#include<fstream>
+#include <fstream>
 #include <sstream>
 using namespace std;
 
+string fetchedAscii(uint32_t tempPC, char instMem[]) {
+	string byte1 = "";
+	string byte2 = "";
+	string byte3 = "";
+	string byte4 = "";
 
-/*
-Put/Define any helper function/definitions you need here
-*/
+	for (uint32_t i = 0; i < 2; i++) {
+		byte1 += instMem[tempPC + i];
+	}
+
+	for (uint32_t i = 2; i < 4; i++) {
+		byte2 += instMem[tempPC + i];
+	}
+
+	for (uint32_t i = 4; i < 6; i++) {
+		byte3 += instMem[tempPC + i];
+	}
+
+	for (uint32_t i = 6; i < 8; i++) {
+		byte4 += instMem[tempPC + i];
+	}
+	
+	// cout << "byte4: " << byte4 << endl;
+	// cout << "byte3: " << byte3 << endl;
+	// cout << "byte2: " << byte2 << endl;
+	// cout << "byte1: " << byte1 << endl;
+	// cout << byte4 + byte3 + byte2 + byte1 << endl;
+	return byte4 + byte3 + byte2 + byte1;
+}
+
+bitset<32> hexDecoder(string asciiHexInput) {
+	stringstream ss;
+	uint32_t hexNum;
+
+	ss << hex << asciiHexInput;
+	ss >> hexNum;
+	bitset<32> binaryString(hexNum);
+
+	return binaryString;
+}
+
 int main(int argc, char* argv[]) {
-	/* This is the front end of your project.
-	You need to first read the instructions that are stored in a file and load them into an instruction memory.
-	*/
-
-	/* Each cell should store 1 byte. You can define the memory either dynamically, or define it as a fixed size with size 4KB (i.e., 4096 lines). Each instruction is 32 bits (i.e., 4 lines, saved in little-endian mode).
-	Each line in the input file is stored as an hex and is 1 byte (each four lines are one instruction). You need to read the file line by line and store it into the memory. You may need a mechanism to convert these values to bits so that you can read opcodes, operands, etc.
-	*/
-
 	char instMem[4096];
 
-
+	//ERROR HANDLING--------------------------------------------------------------------------------------------------------------------------
 	if (argc < 2) {
 		cout << "No file name entered. Exiting..." << endl;
 		return -1;
@@ -36,49 +65,59 @@ int main(int argc, char* argv[]) {
 		return 0; 
 	}
 
+	//READING EACH LINE-----------------------------------------------------------------------------------------------------------------------
 	string line; 
 	int i = 0;
-	while (infile) {
-		infile>>line;
-		stringstream line2(line);
+	while (infile >> line) { //GOES THRU EACH LINE IN BYTE FILE
+		if (line.length() != 2) { //skip any invalid lines
+			break;
+		}
+
+		stringstream line2(line); //splits line into two characters, like 93 = 9, 3
 		char x; 
 		line2>>x;
-		instMem[i] = x; // be careful about hex
+		instMem[i] = x; // be careful about hex, IT WILL BE IN ASCII IN instMem[]
 		i++;
 		line2>>x;
 		instMem[i] = x; // be careful about hex
-		cout<<instMem[i]<<endl;
+		// cout<<instMem[i]<<endl;
 		i++;
 	}
-	int maxPC= i/4; 
+	int maxPC= i/8; 
 
-	/* Instantiate your CPU object here.  CPU class is the main class in this project that defines different components of the processor.
-	CPU class also has different functions for each stage (e.g., fetching an instruction, decoding, etc.).
-	*/
+	//ACTUALLY WORKING------------------------------------------------------------------------------------------------------------------------
+	bitset<32> tempInstr("11010010101100101001001010100101"); //just so compiler is happy
 
-	CPU myCPU;  // call the approriate constructor here to initialize the processor...  
-	// make sure to create a variable for PC and resets it to zero (e.g., unsigned int PC = 0); 
-
-	/* OPTIONAL: Instantiate your Instruction object here. */
-	//Instruction myInst; 
-	
+	CPU myCPU;  
+	Instruction myInst(tempInstr); //we're gonna replace this anyways lmao
 	bool done = true;
-	while (done == true) { // processor's main loop. Each iteration is equal to one clock cycle.  
-		//fetch
-		
 
-		// decode
+	while (done == true) { // processor's main loop. Each iteration is equal to one clock cycle.  
+		//fetch--------------------------------------------------------------------------------
+		uint32_t tempPC = myCPU.readPC() * 8;
+		string fetched = fetchedAscii(tempPC, instMem);
+
+		if (fetched.length() != 8) {
+			break;
+		}
+		cout << "fetched: " << fetched << endl;
+
+		myInst.instr = hexDecoder(fetched);
+		cout << "32-bit decoded instr: " << myInst.instr.to_string() << endl;
+
+		//decode------------------------------------------------------------------------------
+
+		//execute-----------------------------------------------------------------------------
 		
-		// ... 
+		//cleanup-----------------------------------------------------------------------------
 		myCPU.incPC();
-		if (myCPU.readPC() > maxPC)
+		if (myCPU.readPC() >= maxPC)
 			break;
 	}
-	int a0 =0;
-	int a1 =0;  
+	int a0 = 0; //myCPU regfile[10]
+	int a1 = 0;  //myCPU regfile[11]
 	// print the results (you should replace a0 and a1 with your own variables that point to a0 and a1)
 	cout << "(" << a0 << "," << a1 << ")" << endl;
 	
 	return 0;
-
 }

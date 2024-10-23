@@ -11,8 +11,7 @@ unsigned long CPU::readPC() {
 	return PC;
 }
 
-void CPU::incPC()
-{
+void CPU::incPC() {
 	PC++;
 }
 
