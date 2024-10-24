@@ -176,7 +176,7 @@ void CPU::decode(Instruction* instruction) {
 
             break;
         case Jtype:
-            cout << "Opcode Type is J-type." << endl;
+            // cout << "Opcode Type is J-type." << endl;
             imm1 = (bitVal >> 31) & 0x1;              // Bit 20 (sign bit)
             imm2 = (bitVal >> 21) & 0x3FF;            // Bits [10:1]
             imm3 = (bitVal >> 20) & 0x1;              // Bit 11
@@ -185,13 +185,13 @@ void CPU::decode(Instruction* instruction) {
 
             imm = (imm1 << 20) | (imm4 << 12) | (imm3 << 11) | (imm2 << 1);
             if (imm1 == 1) {
-                cout << "TRIGGER" << endl;
+                // cout << "TRIGGER" << endl;
                 imm |= 0xfffff000;  // If sign bit is set, extend the sign
             }
-			cout << "imm1: " << imm1 << " imm2: " << imm2 << " imm3: " << imm3 << " imm4: " << imm4 << " rd: " << rd << " imm: " << imm << endl;
+			// cout << "imm1: " << imm1 << " imm2: " << imm2 << " imm3: " << imm3 << " imm4: " << imm4 << " rd: " << rd << " imm: " << imm << endl;
 
             if (opcodeSubstr == "1101111") {
-                cout << "operation: JAL" << endl;
+                // cout << "operation: JAL" << endl;
                 operation = JAL;
             } else {
                 cout << "error, not valid!" << endl;
@@ -303,7 +303,7 @@ void CPU::execute() {
         case JAL:
             regfile[rd] = (PC + 1) * 4; //saves return addy
             PC += (imm/4);
-            printRegisters();
+            // printRegisters();
             break;
 
         default:
