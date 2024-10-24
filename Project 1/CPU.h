@@ -51,7 +51,7 @@ private:
 	uint32_t rs1;
 	uint32_t rs2;
 	uint32_t rd;
-	uint32_t imm;
+	int32_t imm;
 	uint32_t shamt;
 	uint32_t aluRes;
 };

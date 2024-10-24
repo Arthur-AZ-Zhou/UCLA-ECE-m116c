@@ -176,38 +176,46 @@ void CPU::decode(Instruction* instruction) {
 
             break;
         case Jtype:
+            cout << "Opcode Type is J-type." << endl;
+            imm1 = (bitVal >> 31) & 0x1;              // Bit 20 (sign bit)
+            imm2 = (bitVal >> 21) & 0x3FF;            // Bits [10:1]
+            imm3 = (bitVal >> 20) & 0x1;              // Bit 11
+            imm4 = (bitVal >> 12) & 0xFF;             // Bits [19:12]
+			rd = bitset<5>(bitString32.substr(20, 5)).to_ulong();
+
+            imm = (imm1 << 20) | (imm4 << 12) | (imm3 << 11) | (imm2 << 1);
+            if (imm1 == 1) {
+                cout << "TRIGGER" << endl;
+                imm |= 0xfffff000;  // If sign bit is set, extend the sign
+            }
+			cout << "imm1: " << imm1 << " imm2: " << imm2 << " imm3: " << imm3 << " imm4: " << imm4 << " rd: " << rd << " imm: " << imm << endl;
+
+            if (opcodeSubstr == "1101111") {
+                cout << "operation: JAL" << endl;
+                operation = JAL;
+            } else {
+                cout << "error, not valid!" << endl;
+            }
+
             // cout << "Opcode Type is J-type." << endl;
-            // imm1 = (int32_t)((bitVal & 0x80000000) >> 11);
-            // imm2 = (int32_t)((bitVal & 0x7fe00000) >> 20);
-            // imm3 = (int32_t)((bitVal & 0x100000) >> 9);
-            // imm4 = (int32_t)((bitVal & 0xff000));
+            // imm1 = bitset<1>(bitString32.substr(0, 1)).to_ulong();	 //SIGN BIT
+			// imm2 = bitset<10>(bitString32.substr(1, 10)).to_ulong(); 
+			// imm3 = bitset<1>(bitString32.substr(11, 1)).to_ulong();
+			// imm4 = bitset<8>(bitString32.substr(12, 8)).to_ulong(); 
 			// rd = bitset<5>(bitString32.substr(20, 5)).to_ulong();
-            // imm = imm1 | imm2 | imm3 | imm4;
-            // imm = (imm << 11) >> 11;
+            // imm = (imm1 << 20) | (imm4 << 12) | (imm3 << 11) | (imm4);
 			// cout << "imm1: " << imm1 << " imm2: " << imm2 << " imm3: " << imm3 << " imm4: " << imm4 << " rd: " << rd << " imm: " << imm << endl;
+
+            // imm = (imm << 11) >> 11;
+
+            // cout << "imm (after sign extension): " << imm << endl;
 
             // if (opcodeSubstr == "1101111") {
             //     cout << "operation: JAL" << endl;
             //     operation = JAL;
             // } else {
-            //     cout << "error, not valid!" << endl;
+            //     // cout << "error, not valid!" << endl;
             // }
-
-            // cout << "Opcode Type is J-type." << endl;
-            imm1 = bitset<1>(bitString32.substr(0, 1)).to_ulong();	
-			imm2 = bitset<10>(bitString32.substr(1, 10)).to_ulong(); 
-			imm3 = bitset<1>(bitString32.substr(11, 1)).to_ulong();
-			imm4 = bitset<8>(bitString32.substr(12, 8)).to_ulong(); 
-			rd = bitset<5>(bitString32.substr(20, 5)).to_ulong();
-            imm = (imm1 << 20) | (imm2 << 1) | (imm3 << 11) | imm4;
-			// cout << "imm1: " << imm1 << " imm2: " << imm2 << " imm3: " << imm3 << " imm4: " << imm4 << " rd: " << rd << " imm: " << imm << endl;
-
-            if (opcodeSubstr == "1101111") {
-                // cout << "operation: JAL" << endl;
-                operation = JAL;
-            } else {
-                // cout << "error, not valid!" << endl;
-            }
 
             break;
         default:
@@ -295,7 +303,7 @@ void CPU::execute() {
         case JAL:
             regfile[rd] = (PC + 1) * 4; //saves return addy
             PC += (imm/4);
-            // printRegisters();
+            printRegisters();
             break;
 
         default:
@@ -304,10 +312,10 @@ void CPU::execute() {
     }
 }
 
-// void CPU::printRegisters() {
-//     cout << "Register Vals: " << endl;
-//     for (int32_t i = 0; i < 32; ++i) {
-//         std::cout << "| x" << i << ": " << regfile[i] << " ";
-//     }
-//     cout << endl;
-// }
+void CPU::printRegisters() {
+    cout << "Register Vals: " << endl;
+    for (int32_t i = 0; i < 32; ++i) {
+        std::cout << "| x" << i << ": " << regfile[i] << " ";
+    }
+    cout << endl;
+}
