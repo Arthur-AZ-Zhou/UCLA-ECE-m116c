@@ -63,23 +63,7 @@ class CacheProtocol {
             // return allCaches.size();
         } 
 
-        void invalidateOtherallCaches(int coreIndex, string tagBits) {
-            for (int i = 0; i < allCaches.size(); i++) {
-                if (i == coreIndex) {
-                    continue;
-                } else {
-                    Cache& curCore = allCaches[i];
-                    int rowIndex = curCore.findTagRow(tagBits);
-
-                    if (rowIndex != -1) {
-                        curCore.resetRow(rowIndex);
-                    }
-                }
-            }
-        }
-
-        void processRead(string cacheID, string tagBits) {
-            // Step 1: Find the specific cache making the request
+        void readInstruction(string cacheID, string tagBits) {
             int coreIndex = findCache(cacheID);
             Cache& requestingCache = allCaches[coreIndex];
 
@@ -142,7 +126,7 @@ class CacheProtocol {
                 requestingCache.setRow(0, tagBits, EXCLUSIVE, targetRow); // Row is exclusive to requesting cache
         }
 
-        void processWrite(string cacheID, string tagBits) {
+        void writeInstruction(string cacheID, string tagBits) {
             // Step 1: Find the specific cache making the request
             int coreIndex = findCache(cacheID);
             Cache& requestingCache = allCaches[coreIndex];
@@ -156,9 +140,8 @@ class CacheProtocol {
                 if (state != EXCLUSIVE) {
                     broadcasts++; // Broadcast occurs unless the state is Exclusive (E)
                 }
-                // Update state
-                // invalidateOtherallCaches(rowIndex, tagBits);
 
+                // Update state
                 for (int i = 0; i < allCaches.size(); i++) { //fuck over all other caches
                     if (i == rowIndex) {
                         continue;
@@ -209,7 +192,7 @@ class CacheProtocol {
             }
 
             requestingCache.setRow(1, tagBits, MODIFIED, targetRow); // Set state to Modified (M) since we're writing
-        }   
+        }
 
         void printCaches() {
             if (TRACE_OUTPUT_CACHE_PROTOCOL) {

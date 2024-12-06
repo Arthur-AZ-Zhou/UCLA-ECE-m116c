@@ -2,48 +2,76 @@
 
 using namespace std;
 
-vector<string> splitLine(string& line) {
-    vector<string> result;
-    string sanitizedLine = line;
-    stringstream ss(sanitizedLine);
+vector<string> splitInstructionToVector(string instruction) { //chatgpt helped generate this
+    vector<string> answer;
+    stringstream ss(instruction); // Directly use the input instruction
     string token;
-    while (ss >> token)
-        result.push_back(token);
-    result[0].pop_back();
-    return result;
+
+    // Tokenize the string
+    while (ss >> token) {
+        answer.push_back(token); // Remove the last character of the first token, if it's non-empty
+    }
+
+    // for (int i = 0; i < answer.size(); i++) {
+    //     cout << answer[i] << " ";
+    // }
+    // cout << endl;
+
+    return answer;
+}
+
+vector<vector<string>> readInstructionsFromFile (string filename) {
+    ifstream fileReader(filename);
+    vector<vector<string>> cacheInstructions;
+    string line;
+    
+    while (getline(fileReader, line)) {
+        cacheInstructions.push_back(splitInstructionToVector(line));
+    }
+    
+    fileReader.close();
+    return cacheInstructions;
+}
+
+vector<string> getUniqueSortedIDs(vector<vector<string>> cacheInstructions) {
+    unordered_set<string> uniqueCacheIDs;
+    
+    for (int i = 0; i < cacheInstructions.size(); i++) {
+        uniqueCacheIDs.insert(cacheInstructions[i][0]);
+    }
+
+    // for (auto& instruction : cacheInstructions) {
+    //     cout << "instruction: " << instruction << endl;
+    // }
+    
+    vector<string> sortedIDs(uniqueCacheIDs.begin(), uniqueCacheIDs.end());
+    sort(sortedIDs.begin(), sortedIDs.end()); //FRIEND ADVISED ME TO SORT SINCE IT WAS FAILING CAMPUSWIRE
+    
+    return sortedIDs;
 }
 
 int main(int argc, char* argv[]) {
-    string input_file = argv[1];
-    ifstream file(input_file);
-
-    vector<vector<string>> instructions; // can be thought of as a vector<Instructions>
-    string line;
-    while (getline(file, line)) {
-        auto instruction_tokens = splitLine(line);
-        instructions.push_back(instruction_tokens);
-    }
-    file.close();
-
-    // Extract unique Core IDs
-    unordered_set<string> IDSet;
-    for (vector<string>& instruction : instructions)
-        IDSet.insert(instruction[0]);
-    vector<string> IDs(IDSet.begin(), IDSet.end());
-    sort(IDs.begin(), IDs.end());
+    vector<vector<string>> cacheInstructions = readInstructionsFromFile(argv[1]);
+    vector<string> uniqueIDs = getUniqueSortedIDs(cacheInstructions);
+    CacheProtocol protoc(uniqueIDs); //create cache protocol based on uniqueIDs
     
-    CacheProtocol protoc(IDs);
-    for (vector<string>& instruction : instructions) {
-        string ID = instruction[0];
-        string instruct = instruction[1];
-        string tag = instruction[2];
-        if (instruct == "write") {
-            protoc.processWrite(ID, tag);
+    for (int i = 0; i < cacheInstructions.size(); i++) {        
+        if (cacheInstructions[i][1] == "write") {
+            protoc.writeInstruction(cacheInstructions[i][0], cacheInstructions[i][2]);
         } else {
-            protoc.processRead(ID, tag);
+            protoc.readInstruction(cacheInstructions[i][0], cacheInstructions[i][2]);
         }
     }
 
+    // for (auto& instruction : cacheInstructions) {        
+    //     if (instruction == "write") {
+    //         cout << "TRIGGER WRITE" << endl;
+    //         protoc.writeInstruction(instruction[0], instruction[2]);
+    //     } else {
+    //         protoc.readInstruction(instruction[0], instruction[2]);
+    //     }
+    // }
+    
     cout << protoc.hits << endl;
     cout << protoc.misses << endl;
     cout << protoc.writeBacks << endl;
