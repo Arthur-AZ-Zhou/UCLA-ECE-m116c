@@ -63,135 +63,215 @@ class CacheProtocol {
             // return allCaches.size();
         } 
 
-        void readInstruction(string cacheID, string tagBits) {
-            int coreIndex = findCache(cacheID);
-            Cache& requestingCache = allCaches[coreIndex];
+        void readInstruction(string cacheID, string tagBits) {  
+            int cacheRqIndex = findCache(cacheID);
+            Cache& cacheRq = allCaches[cacheRqIndex];
 
-            // Step 2: Check if the tag/Row exists in the requesting cache
-            int rowIndex = requestingCache.findTagRow(tagBits);
-            if (rowIndex != -1) {
-                // Tag/Row found in cache
-                hits++;
-                char state = requestingCache.rows[rowIndex].coherencyState;
+            //check if exists in the requesting cache
+            int indexOfRow = cacheRq.findTagRow(tagBits);
+            if (indexOfRow == -1) {
+                // cout << "FIRST READ TRIGGER" << endl;
 
-                if (state != EXCLUSIVE) {
-                    broadcasts++; // Broadcast occurs unless the state is Exclusive (E) per Nader
-                }
-                requestingCache.adjustLRU(rowIndex);
-                
+                // Cache miss handling
+                handleCacheMiss(cacheRq, tagBits);
+                bool isInDiffCache = checkDiffCaches(tagBits, cacheRqIndex); //check other caches
+                int targetCacheRow = cacheRq.findBootRow();
+
+                handleCacheWriteBack(cacheRq, targetCacheRow); //write if needed
+
+                handleCacheRowSetting(cacheRq, tagBits, isInDiffCache, targetCacheRow); //finish off
+            } else {
+                // cout << "SECOND READ TRIGGER" << endl;
+                 
+                handleCacheHit(cacheRq, indexOfRow);
                 return;
             }
 
-            // By this point, read miss
-            misses++;
-            broadcasts++; // Broadcast occurs on miss (since Row is not in E state in requesting cache)
-
-            // Step 3: Check other caches for the Row
-            bool foundInOtherCache = false;
-            for (int i = 0; i < allCaches.size(); ++i) {
-                if (i == coreIndex) { 
-                    continue;
-                } else {
-                    Cache& otherCache = allCaches[i];
-                    int otherRowIndex = otherCache.findTagRow(tagBits);
-                    if (otherRowIndex != -1) {
-                        char otherState = otherCache.rows[otherRowIndex].coherencyState;
-                        if (otherState == MODIFIED || otherState == OWNED) {
-                            // Other cache has modified data; needs to write back
-                            writeBacks++;
-                            otherCache.rows[otherRowIndex].coherencyState = SHARED;
-                            otherCache.rows[otherRowIndex].dirtyBit = 0;
-                        }
-                        if (otherState == EXCLUSIVE) {
-                            otherCache.rows[otherRowIndex].coherencyState = FORWARD; // Upgrade other cache to Exclusive state
-                        }
-                        foundInOtherCache = true;
-                        break;
-                    }
-                }
+            if (TRACE_OUTPUT_CACHE_PROTOCOL) {
+                cout << "SHOULD NEVER GET HERE!!!" << endl;
+                printCaches();
             }
-
-            int targetRow = requestingCache.findBootRow();
-
-            if (requestingCache.writeBackRow(targetRow)) {
-                writeBacks++;
-            }
-
-            // Set state based on whether other caches have the Row
-            if (foundInOtherCache) {
-                // Row is shared among caches
-                requestingCache.setRow(0, tagBits, SHARED, targetRow);
-                transfers++;
-            } else
-                requestingCache.setRow(0, tagBits, EXCLUSIVE, targetRow); // Row is exclusive to requesting cache
         }
 
         void writeInstruction(string cacheID, string tagBits) {
-            // Step 1: Find the specific cache making the request
-            int coreIndex = findCache(cacheID);
-            Cache& requestingCache = allCaches[coreIndex];
+            int cacheRqIndex = findCache(cacheID);
+            Cache& cacheRq = allCaches[cacheRqIndex];
 
-            // Step 2: Check if the tag/Row exists in the requesting cache
-            int rowIndex = requestingCache.findTagRow(tagBits);
-            if (rowIndex != -1) {
-                // Tag/Row found in cache
-                char state = requestingCache.rows[rowIndex].coherencyState;
+            //check if exists in the requesting cache
+            int indexOfRow = cacheRq.findTagRow(tagBits);
+            if (indexOfRow != -1) {
+                // cout << "FIRST WRITE TRIGGER" << endl;
+
+                // Cache miss handling
+                char state = cacheRq.rows[indexOfRow].coherencyState;
                 hits++;
                 if (state != EXCLUSIVE) {
                     broadcasts++; // Broadcast occurs unless the state is Exclusive (E)
                 }
 
-                // Update state
-                for (int i = 0; i < allCaches.size(); i++) { //fuck over all other caches
-                    if (i == rowIndex) {
+                // Invalidate other caches and update the state
+                for (int i = 0; i < allCaches.size(); i++) { 
+                    if (i == indexOfRow) continue;
+
+                    Cache& curCore = allCaches[i];
+                    int found = curCore.findTagRow(tagBits);
+
+                    if (found != -1) {
+                        curCore.resetRow(found);
+                    }
+                }
+
+                cacheRq.rows[indexOfRow].coherencyState = MODIFIED;
+                cacheRq.adjustLRU(indexOfRow);
+                return;
+            } else {
+                // Cache miss handling
+                handleCacheMiss(cacheRq, tagBits);
+
+                // Step 3: Invalidate other caches and check for write-backs
+                bool foundInOtherCache = false;
+                for (int i = 0; i < allCaches.size(); ++i) {
+                    if (i == cacheRqIndex) { 
                         continue;
                     } else {
-                        Cache& curCore = allCaches[i];
-                        int found = curCore.findTagRow(tagBits);
-
-                        if (found != -1) {
-                            curCore.resetRow(found);
+                        Cache& otherCache = allCaches[i];
+                        int otherRowIndex = otherCache.findTagRow(tagBits);
+                        if (otherRowIndex != -1) {
+                            char otherState = otherCache.rows[otherRowIndex].coherencyState;
+                            if (otherState == MODIFIED || otherState == OWNED) {
+                                writeBacks++; // Other cache has modified data; needs to write back
+                            }
+                            // Invalidate the Row in other caches
+                            otherCache.resetRow(otherRowIndex);
+                            foundInOtherCache = true;
                         }
                     }
                 }
 
-                requestingCache.rows[rowIndex].coherencyState = MODIFIED;
-                requestingCache.adjustLRU(rowIndex);
-                return;
+                int targetRow = cacheRq.findBootRow();
+                handleCacheWriteBack(cacheRq, targetRow);
+
+                //must change to this since we actually modify
+                cacheRq.setRow(1, tagBits, MODIFIED, targetRow);
             }
 
-            // By this point, read miss
+            if (TRACE_OUTPUT_CACHE_PROTOCOL) {
+                cout << "SHOULD NEVER GET HERE!!!" << endl;
+                printCaches();
+            }
+        }
+
+        void handleCacheHit(Cache& cacheRq, int indexOfRow) { //Row found in cache, increment hits
+            hits++;            
+            if (cacheRq.rows[indexOfRow].coherencyState != EXCLUSIVE) { //BROADCAST HAPPENS UNELSS STATE IS EXCLUSIVE
+                broadcasts++;
+            }
+
+            if (TRACE_OUTPUT_CACHE_PROTOCOL == true) {
+                cout << "cache hit at row index: " << indexOfRow << endl;
+            } 
+
+            cacheRq.adjustLRU(indexOfRow);
+
+            if (TRACE_OUTPUT_CACHE_PROTOCOL == true) {
+                cout << hits << endl;
+                cout << misses << endl;
+                cout << writeBacks << endl;
+                cout << broadcasts << endl;
+                cout << transfers << endl;
+                printCaches();
+            } 
+
+            if (TRACE_OUTPUT_CACHE_PROTOCOL == true) {
+                cout << "cache hit at row index: " << indexOfRow << endl;
+            } 
+        }
+
+        void handleCacheMiss(Cache& cacheRq, string tagBits) { //case when the requested tag is not found in the cache
             misses++;
-            broadcasts++; // Broadcast occurs on miss (since Row is not in E state in requesting cache)
+            broadcasts++; //broadcast occurs on miss since Row is not in Exclusive state in requesting cache
+            // cout << "cache miss for tag: " << tagBits << endl;
+            // if (TRACE_OUTPUT_CACHE_PROTOCOL == true) {
+            //     cout << hits << endl;
+            //     cout << misses << endl;
+            //     cout << writeBacks << endl;
+            //     cout << broadcasts << endl;
+            //     cout << transfers << endl;
+            // } 
+        }
 
-            // Step 3: Invalidate other caches and check for writeBacks
-            bool foundInOtherCache = false;
+        bool checkDiffCaches(string tagBits, int cacheRqIndex) {
             for (int i = 0; i < allCaches.size(); ++i) {
-                if (i == coreIndex) { 
-                    continue;
-                } else {
-
-                    Cache& otherCache = allCaches[i];
-                    int otherRowIndex = otherCache.findTagRow(tagBits);
-                    if (otherRowIndex != -1) {
-                        char otherState = otherCache.rows[otherRowIndex].coherencyState;
-                        if (otherState == MODIFIED || otherState == OWNED) {
-                            writeBacks++; // Other cache has modified data; needs to write back
-                        }
-                        // Invalidate the Row in other caches
-                        otherCache.resetRow(otherRowIndex);
-                        foundInOtherCache = true;
+                Cache& diffCache = allCaches[i];
+                int diffRowIndex = diffCache.findTagRow(tagBits);
+                
+                // if (i == cacheIndex) continue;
+                if (i != cacheRqIndex) { 
+                    if (TRACE_OUTPUT_CACHE_PROTOCOL) {
+                        cout << "INFERNO TRIGGER" << endl;
                     }
+
+                    if (diffRowIndex != -1) {
+                        handleDiffCacheRowState(diffCache, diffRowIndex, diffCache.rows[diffRowIndex].coherencyState);
+                        printCaches();
+                        return true;
+                    }
+                    // else {
+                }
+
+                // cout << "otherwise continue" << endl;
+            }
+            return false;
+        }
+
+        void handleDiffCacheRowState(Cache& diffCache, int diffRowIndex, char diffState) {
+            // if (otherState == MODIFIED) {
+            //     if (otherState == OWNED) {
+            //     otherCache.rows[otherRowIndex].coherencyState = SHARED; 
+
+            if (diffState == OWNED || diffState == MODIFIED) {
+                // cout << "BOTH MODIFIED AND OWNED" << endl;
+                writeBacks++; //other cache has modified data, must write back
+                // cout << "NUM WRITEBACKS: " << writeBacks << endl;
+                diffCache.rows[diffRowIndex].coherencyState = SHARED;
+                diffCache.rows[diffRowIndex].dirtyBit = 0;
+            }
+
+            if (diffState == EXCLUSIVE) {
+                // cout << "EXCLUSIVE TRIGGER" << endl;
+                diffCache.rows[diffRowIndex].coherencyState = FORWARD; //upgrade from exclusive
+            }
+        }
+
+        void handleCacheWriteBack(Cache& cacheRq, int targetCacheRow) {
+            if (cacheRq.writeBackRow(targetCacheRow)) {
+                // cout << "write-back at row index: " << targetRow << endl;
+                writeBacks++;
+                if (TRACE_OUTPUT_CACHE_PROTOCOL) {
+                    cout << "num writeBacks: " << writeBacks << endl;
                 }
             }
+            
+        }
 
-            int targetRow = requestingCache.findBootRow();
+        void handleCacheRowSetting(Cache& cacheRq, string tagBits, bool isInDiffCache, int targetCacheRow) {
+            if (isInDiffCache) {
+                cacheRq.setRow(0, tagBits, SHARED, targetCacheRow); //row is shared among caches
+                // cout << "SHARED=========================================" << endl;
+                transfers++;
+                return;
+            } 
 
-            if (requestingCache.writeBackRow(targetRow)) {
-                writeBacks++;
-            }
+            cacheRq.setRow(0, tagBits, EXCLUSIVE, targetCacheRow); //row is exclusive to requesting cache
+            // cout << "EXCLUSIVE=========================================" << endl;
 
-            requestingCache.setRow(1, tagBits, MODIFIED, targetRow); // Set state to Modified (M) since we're writing
+            // if (!foundInOtherCache) {  
+            //     requestingCache.setRow(1, tagBits, SHARED, targetRow); 
+            //     transfers--; 
+            // } else {
+            //     requestingCache.setRow(1, tagBits, EXCLUSIVE, targetRow);
+            //     transfers++; 
+            // }
         }
 
         void printCaches() {
