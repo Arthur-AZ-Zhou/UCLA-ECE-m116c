@@ -96,13 +96,56 @@ class CacheProtocol {
         void writeInstruction(string cacheID, string tagBits) {
             int cacheRqIndex = findCache(cacheID);
             Cache& cacheRq = allCaches[cacheRqIndex];
-
-            //check if exists in the requesting cache
             int indexOfRow = cacheRq.findTagRow(tagBits);
-            if (indexOfRow != -1) {
-                // cout << "FIRST WRITE TRIGGER" << endl;
 
+            if (indexOfRow == -1) {
+                if (TRACE_OUTPUT_CACHE_PROTOCOL) {
+                    cout << "SECOND WRITE TRIGGER" << endl;
+                    cout << hits << endl;
+                    cout << misses << endl;
+                    cout << writeBacks << endl;
+                    cout << broadcasts << endl;
+                    cout << transfers << endl;
+                }
+                
                 // Cache miss handling
+                handleCacheMiss(cacheRq, tagBits);
+                bool isInDiffCache = false;
+
+                for (int i = 0; i < allCaches.size(); ++i) {
+                    if (i == cacheRqIndex) { 
+                        continue;
+                    } else {
+                        Cache& otherCache = allCaches[i];
+                        int otherRowIndex = otherCache.findTagRow(tagBits);
+
+                        if (otherRowIndex != -1) {
+                            char otherState = otherCache.rows[otherRowIndex].coherencyState;
+                            if (otherState == OWNED || otherState == MODIFIED) {
+                                // cout << "BOTH MODIFIED AND OWNED" << endl;
+                                writeBacks++; 
+                                // cout << "NUM WRITEBACKS: " << writeBacks << endl;
+                            }
+                            otherCache.resetRow(otherRowIndex); //invalidate the row
+                            isInDiffCache = true;
+                        }
+                    }
+                }
+
+                int targetCacheRow = cacheRq.findBootRow();
+                handleCacheWriteBack(cacheRq, targetCacheRow);
+                cacheRq.setRow(1, tagBits, MODIFIED, targetCacheRow); //must change to this since we actually modify
+                printCaches();
+            } else {
+                if (TRACE_OUTPUT_CACHE_PROTOCOL) {
+                    cout << "FIRST WRITE TRIGGER" << endl;
+                    cout << hits << endl;
+                    cout << misses << endl;
+                    cout << writeBacks << endl;
+                    cout << broadcasts << endl;
+                    cout << transfers << endl;
+                }
+
                 char state = cacheRq.rows[indexOfRow].coherencyState;
                 hits++;
                 if (state != EXCLUSIVE) {
@@ -111,48 +154,20 @@ class CacheProtocol {
 
                 // Invalidate other caches and update the state
                 for (int i = 0; i < allCaches.size(); i++) { 
-                    if (i == indexOfRow) continue;
+                    if (i != indexOfRow) {
+                        Cache& curCore = allCaches[i];
+                        int found = curCore.findTagRow(tagBits);
 
-                    Cache& curCore = allCaches[i];
-                    int found = curCore.findTagRow(tagBits);
-
-                    if (found != -1) {
-                        curCore.resetRow(found);
+                        if (found != -1) {
+                            curCore.resetRow(found);
+                        }
                     }
                 }
 
                 cacheRq.rows[indexOfRow].coherencyState = MODIFIED;
                 cacheRq.adjustLRU(indexOfRow);
+                printCaches();
                 return;
-            } else {
-                // Cache miss handling
-                handleCacheMiss(cacheRq, tagBits);
-
-                // Step 3: Invalidate other caches and check for write-backs
-                bool foundInOtherCache = false;
-                for (int i = 0; i < allCaches.size(); ++i) {
-                    if (i == cacheRqIndex) { 
-                        continue;
-                    } else {
-                        Cache& otherCache = allCaches[i];
-                        int otherRowIndex = otherCache.findTagRow(tagBits);
-                        if (otherRowIndex != -1) {
-                            char otherState = otherCache.rows[otherRowIndex].coherencyState;
-                            if (otherState == MODIFIED || otherState == OWNED) {
-                                writeBacks++; // Other cache has modified data; needs to write back
-                            }
-                            // Invalidate the Row in other caches
-                            otherCache.resetRow(otherRowIndex);
-                            foundInOtherCache = true;
-                        }
-                    }
-                }
-
-                int targetRow = cacheRq.findBootRow();
-                handleCacheWriteBack(cacheRq, targetRow);
-
-                //must change to this since we actually modify
-                cacheRq.setRow(1, tagBits, MODIFIED, targetRow);
             }
 
             if (TRACE_OUTPUT_CACHE_PROTOCOL) {
