@@ -1,117 +1,141 @@
-#include "Cache.h"
+#include "Set.cpp"
 
-// Initialize 4 lines for this private cache
-Cache::Cache(string id) : coreID(id) {
-    lines.resize(NUM_LINES);
-    for (int i = 0; i < NUM_LINES; ++i)
-        installLine(i, 'I', "0", false);
-}
+using namespace std;
 
-// Returns true if cache is full
-bool Cache::isCacheFull() const {
-    for (const auto& line : lines)
-        if (line.coherencyState == 'I')
-            return false;
-    return true;
-}
+static const int LINES_PER_CORE = 4;
+static const int TRACE_OUTPUT_CACHE = false;
 
-// Find valid line with given tag
-int Cache::findLine(string tag) const {
-    for (int i = 0; i < NUM_LINES; ++i)
-        if (lines[i].tag == tag && lines[i].coherencyState != 'I')
-            return i;
-    return -1;
-}
+class Cache {
+    public:
+        string coreID;
+        vector<Set> lines; 
 
-// Find first invalid line for replacement
-int Cache::findFirstInvalidLine() const {
-    for (int i = 0; i < NUM_LINES; ++i)
-        if (lines[i].coherencyState == 'I')
-            return i;
-    return -1;
-}
+        Cache(string id){
+            coreID = id;
 
-// Find LRU line when no invalid line exists
-int Cache::findLRULine() const {
-    int LRUindex = 0;
-    for (int i = 0; i < NUM_LINES; ++i)
-        if (lines[i].lruState == 0) {
-            LRUindex = i;
-            break;
+            lines.resize(4);
+            installLine(0, INVALID, "0", false);
+            installLine(1, INVALID, "0", false);
+            installLine(2, INVALID, "0", false);
+            installLine(3, INVALID, "0", false);
         }
-    return LRUindex;
-}
 
-// Returns true if line needs write back
-bool Cache::lineNeedsWriteBack(int lineIndex) const {
-    return getLineState(lineIndex) == 'M' || isLineOwned(lineIndex) || lines[lineIndex].dirty;
-}
+        //getters===============================
+        string getCoreID() { 
+            return coreID;
+        }
 
-// Returns coherency state of selected line
-char Cache::getLineState(int lineIndex) const { return lines[lineIndex].coherencyState; }
+        // Returns coherency state of selected line
+        char getLineState(int lineIndex) { 
+            return lines[lineIndex].coherencyState; 
+        }
 
-// Returns true if line is owned
-bool Cache::isLineOwned(int lineIndex) const { return getLineState(lineIndex) == 'O'; }
+        bool isLineOwned(int lineIndex) { 
+            return getLineState(lineIndex) == OWNED; 
+        }
 
-// Returns true if line is exclusive
-bool Cache::isLineExclusive(int lineIndex) const { return getLineState(lineIndex) == 'E'; }
+        bool isLineExclusive(int lineIndex) { 
+            return getLineState(lineIndex) == EXCLUSIVE; 
+        }
 
-// Returns true if line is forward
-bool Cache::isLineForward(int lineIndex) const { return getLineState(lineIndex) == 'F'; }
+        bool isLineForward(int lineIndex) { 
+            return getLineState(lineIndex) == FORWARD; 
+        }
+        //getters===============================
 
-// Update LRU when a line is accessed
-void Cache::updateLRU(int accessedLineIndex) {
-    // Decrement LRU counters of non-accessed lines
-    int curAccessedLRUState = lines[accessedLineIndex].lruState;
-    for (int i = 0; i < NUM_LINES; ++i)
-        if (i != accessedLineIndex && lines[i].lruState > curAccessedLRUState)
-            lines[i].lruState--;
-    // Set accessed line to MRU
-    lines[accessedLineIndex].lruState = NUM_LINES - 1;
-}
+        //setters===============================
+        void setLineState(int lineIndex, CoherencyState newState) { 
+            lines[lineIndex].coherencyState = newState; 
+        }
 
-// Install new line at given index
-void Cache::installLine(int lineIndex, char coherencyState, string tag, bool dirty) {
-    lines[lineIndex].coherencyState = coherencyState;
-    lines[lineIndex].tag = tag;
-    lines[lineIndex].dirty = dirty;
-    updateLRU(lineIndex);
-}
+        void setDirtyBit(int lineIndex, int dirtyBit) { 
+            lines[lineIndex].dirtyBit = dirtyBit; 
+        }
+        //setters===============================
 
-// For API
-void Cache::updateLineWithoutLRU(int lineIndex, char newState, bool newDirty) {
-    setLineState(lineIndex, newState);
-    setDirtyBit(lineIndex, newDirty);
-}
+        // Returns true if cache is full
+        bool isCacheFull() {
+            for (const auto& line : lines)
+                if (line.coherencyState == 'I')
+                    return false;
+            return true;
+        }
 
-// Directly changes the selected line's coherency state
-void Cache::setLineState(int lineIndex, char newState) { lines[lineIndex].coherencyState = newState; }
+        // Find valid line with given tagBitsz
+        int findLine(string tagBits) {
+            for (int i = 0; i < LINES_PER_CORE; ++i)
+                if (lines[i].tagBits == tagBits && lines[i].coherencyState != 'I')
+                    return i;
+            return -1;
+        }
 
-// Directly changes the selected line's dirty bit
-void Cache::setDirtyBit(int lineIndex, bool dirty) { lines[lineIndex].dirty = dirty; }
+        // Find first invalid line for replacement
+        int findFirstInvalidLine() {
+            for (int i = 0; i < LINES_PER_CORE; ++i)
+                if (lines[i].coherencyState == 'I')
+                    return i;
+            return -1;
+        }
 
-// Reset line at given index
-void Cache::resetLine(int lineIndex) {
-    lines[lineIndex].coherencyState = 'I';
-    lines[lineIndex].tag = "0";
-    lines[lineIndex].dirty = false;
-    updateLRU(lineIndex);
-}
+        // Find LRU line when no invalid line exists
+        int findLRULine() {
+            int LRUindex = 0;
+            for (int i = 0; i < LINES_PER_CORE; ++i)
+                if (lines[i].LRUState == 0) {
+                    LRUindex = i;
+                    break;
+                }
+            return LRUindex;
+        }
 
-// Does the same as resetLine, more of an API thing
-void Cache::invalidateLine(string tag) {
-    int lineIndex = findLine(tag);
-    if (lineIndex != -1)
-        resetLine(lineIndex);
-}
+        // Returns true if line needs write back
+        bool lineNeedsWriteBack(int lineIndex) {
+            return getLineState(lineIndex) == MODIFIED || isLineOwned(lineIndex) || lines[lineIndex].dirtyBit;
+        }
 
-// Print debugging
-void Cache::printCacheState() const {
-    for (int i = 0; i < NUM_LINES; ++i) {
-        cout << "Line " << i 
-        << ": State=" << lines[i].coherencyState 
-        << ", Tag=" << lines[i].tag 
-        << ", LRU=" << lines[i].lruState 
-        << ", Dirty=" << lines[i].dirty << endl;
-    }
-}
+        // Update LRU when a line is accessed
+        void updateLRU(int accessedLineIndex) {
+            // Decrement LRU counters of non-accessed lines
+            int curAccessedLRUState = lines[accessedLineIndex].LRUState;
+            for (int i = 0; i < LINES_PER_CORE; ++i)
+                if (i != accessedLineIndex && lines[i].LRUState > curAccessedLRUState)
+                    lines[i].LRUState--;
+            // Set accessed line to MRU
+            lines[accessedLineIndex].LRUState = LINES_PER_CORE - 1;
+        }
+
+        // Install new line at given index
+        void installLine(int lineIndex, CoherencyState coherencyState, string tagBits, int dirtyBit) {
+            lines[lineIndex].coherencyState = coherencyState;
+            lines[lineIndex].tagBits = tagBits;
+            lines[lineIndex].dirtyBit = dirtyBit;
+            updateLRU(lineIndex);
+        }
+
+        // Reset line at given index
+        void resetLine(int lineIndex) {
+            lines[lineIndex].coherencyState = INVALID;
+            lines[lineIndex].tagBits = "0";
+            lines[lineIndex].dirtyBit = 0;
+            updateLRU(lineIndex);
+        }
+
+        // Does the same as resetLine, more of an API thing
+        void invalidateLine(string tagBits) {
+            int lineIndex = findLine(tagBits);
+            if (lineIndex != -1)
+                resetLine(lineIndex);
+        }
+
+        void printCore() {
+            if (TRACE_OUTPUT_CACHE == true) {
+                for (int i = 0; i < lines.size(); i++) {
+                    cout << "LINE: " << i << "====================" << endl;
+                    cout << "dirtyBit: " << lines[i].dirtyBit << endl;
+                    cout << "tagBits: " << lines[i].tagBits << endl;
+                    cout << "LRUState: " << lines[i].LRUState << endl;
+                    cout << "coherencyState: " << lines[i].coherencyState << endl;
+                }
+            }
+        }
+};
