@@ -12,7 +12,7 @@ vector<string> splitInstructionToVector(string instruction) { //chatgpt helped g
         answer.push_back(token); // Remove the last character of the first token, if it's non-empty
     }
 
-    // for (int i = 0; i < answer.size(); i++) {
+    // for (int32_t i = 0; i < answer.size(); i++) {
     //     cout << answer[i] << " ";
     // }
     // cout << endl;
@@ -36,7 +36,7 @@ vector<vector<string>> readInstructionsFromFile (string filename) {
 vector<string> getUniqueSortedIDs(vector<vector<string>> cacheInstructions) {
     unordered_set<string> uniqueCacheIDs;
     
-    for (int i = 0; i < cacheInstructions.size(); i++) {
+    for (int32_t i = 0; i < cacheInstructions.size(); i++) {
         uniqueCacheIDs.insert(cacheInstructions[i][0]);
     }
 
@@ -50,12 +50,12 @@ vector<string> getUniqueSortedIDs(vector<vector<string>> cacheInstructions) {
     return sortedIDs;
 }
 
-int main(int argc, char* argv[]) {
+int32_t main(int32_t argc, char* argv[]) {
     vector<vector<string>> cacheInstructions = readInstructionsFromFile(argv[1]);
     vector<string> uniqueIDs = getUniqueSortedIDs(cacheInstructions);
     CacheProtocol protoc(uniqueIDs); //create cache protocol based on uniqueIDs
     
-    for (int i = 0; i < cacheInstructions.size(); i++) {        
+    for (int32_t i = 0; i < cacheInstructions.size(); i++) {        
         if (cacheInstructions[i][1] == "write") {
             protoc.writeInstruction(cacheInstructions[i][0], cacheInstructions[i][2]);
         } else {

@@ -5,11 +5,11 @@ static const bool TRACE_OUTPUT_CACHE_PROTOCOL = false;
 
 class CacheProtocol {
     public:
-        int hits;
-        int misses;
-        int writeBacks;
-        int broadcasts;
-        int transfers;
+        int32_t hits;
+        int32_t misses;
+        int32_t writeBacks;
+        int32_t broadcasts;
+        int32_t transfers;
         vector<Cache> allCaches; 
 
         CacheProtocol(vector<string> cacheIDs) {
@@ -19,14 +19,14 @@ class CacheProtocol {
             broadcasts = 0;
             transfers = 0;
 
-            for (int i = 0; i < cacheIDs.size(); i++) {
+            for (int32_t i = 0; i < cacheIDs.size(); i++) {
                 allCaches.push_back(Cache(cacheIDs[i]));
             }
 
             printCaches();
         }
         
-        int findCache(string cacheID) { //finds specific cache given the ID
+        int32_t findCache(string cacheID) { //finds specific cache given the ID
             // cout << "FINDCACHE TRIGGER" << endl;
 
             // auto it = allCaches.begin();
@@ -41,7 +41,7 @@ class CacheProtocol {
             //     it++; 
             // }
 
-            for (int i = 0; i < allCaches.size(); i++) {
+            for (int32_t i = 0; i < allCaches.size(); i++) {
                 if (cacheID == allCaches[i].ID) {
                     if (TRACE_OUTPUT_CACHE_PROTOCOL) {
                         cout << "FOUND ID AT i: " << i << endl;
@@ -64,18 +64,18 @@ class CacheProtocol {
         } 
 
         void readInstruction(string cacheID, string tagBits) {  
-            int cacheRqIndex = findCache(cacheID);
+            int32_t cacheRqIndex = findCache(cacheID);
             Cache& cacheRq = allCaches[cacheRqIndex];
 
             //check if exists in the requesting cache
-            int indexOfRow = cacheRq.findTagRow(tagBits);
+            int32_t indexOfRow = cacheRq.findTagRow(tagBits);
             if (indexOfRow == -1) {
                 // cout << "FIRST READ TRIGGER" << endl;
 
                 // Cache miss handling
                 handleCacheMiss(cacheRq, tagBits);
                 bool isInDiffCache = checkDiffCaches(tagBits, cacheRqIndex); //check other caches
-                int targetCacheRow = cacheRq.findBootRow();
+                int32_t targetCacheRow = cacheRq.findBootRow();
 
                 handleCacheWriteBack(cacheRq, targetCacheRow); //write if needed
 
@@ -94,9 +94,9 @@ class CacheProtocol {
         }
 
         void writeInstruction(string cacheID, string tagBits) {
-            int cacheRqIndex = findCache(cacheID);
+            int32_t cacheRqIndex = findCache(cacheID);
             Cache& cacheRq = allCaches[cacheRqIndex];
-            int indexOfRow = cacheRq.findTagRow(tagBits);
+            int32_t indexOfRow = cacheRq.findTagRow(tagBits);
 
             if (indexOfRow == -1) {
                 if (TRACE_OUTPUT_CACHE_PROTOCOL) {
@@ -112,12 +112,12 @@ class CacheProtocol {
                 handleCacheMiss(cacheRq, tagBits);
                 bool isInDiffCache = false;
 
-                for (int i = 0; i < allCaches.size(); ++i) {
+                for (int32_t i = 0; i < allCaches.size(); ++i) {
                     if (i == cacheRqIndex) { 
                         continue;
                     } else {
                         Cache& otherCache = allCaches[i];
-                        int otherRowIndex = otherCache.findTagRow(tagBits);
+                        int32_t otherRowIndex = otherCache.findTagRow(tagBits);
 
                         if (otherRowIndex != -1) {
                             char otherState = otherCache.rows[otherRowIndex].coherencyState;
@@ -132,7 +132,7 @@ class CacheProtocol {
                     }
                 }
 
-                int targetCacheRow = cacheRq.findBootRow();
+                int32_t targetCacheRow = cacheRq.findBootRow();
                 handleCacheWriteBack(cacheRq, targetCacheRow);
                 cacheRq.setRow(1, tagBits, MODIFIED, targetCacheRow); //must change to this since we actually modify
                 printCaches();
@@ -153,10 +153,10 @@ class CacheProtocol {
                 }
 
                 // Invalidate other caches and update the state
-                for (int i = 0; i < allCaches.size(); i++) { 
+                for (int32_t i = 0; i < allCaches.size(); i++) { 
                     if (i != indexOfRow) {
                         Cache& curCore = allCaches[i];
-                        int found = curCore.findTagRow(tagBits);
+                        int32_t found = curCore.findTagRow(tagBits);
 
                         if (found != -1) {
                             curCore.resetRow(found);
@@ -176,7 +176,7 @@ class CacheProtocol {
             }
         }
 
-        void handleCacheHit(Cache& cacheRq, int indexOfRow) { //Row found in cache, increment hits
+        void handleCacheHit(Cache& cacheRq, int32_t indexOfRow) { //Row found in cache, increment hits
             hits++;            
             if (cacheRq.rows[indexOfRow].coherencyState != EXCLUSIVE) { //BROADCAST HAPPENS UNELSS STATE IS EXCLUSIVE
                 broadcasts++;
@@ -215,10 +215,10 @@ class CacheProtocol {
             // } 
         }
 
-        bool checkDiffCaches(string tagBits, int cacheRqIndex) {
-            for (int i = 0; i < allCaches.size(); ++i) {
+        bool checkDiffCaches(string tagBits, int32_t cacheRqIndex) {
+            for (int32_t i = 0; i < allCaches.size(); ++i) {
                 Cache& diffCache = allCaches[i];
-                int diffRowIndex = diffCache.findTagRow(tagBits);
+                int32_t diffRowIndex = diffCache.findTagRow(tagBits);
                 
                 // if (i == cacheIndex) continue;
                 if (i != cacheRqIndex) { 
@@ -239,7 +239,7 @@ class CacheProtocol {
             return false;
         }
 
-        void handleDiffCacheRowState(Cache& diffCache, int diffRowIndex, char diffState) {
+        void handleDiffCacheRowState(Cache& diffCache, int32_t diffRowIndex, char diffState) {
             // if (otherState == MODIFIED) {
             //     if (otherState == OWNED) {
             //     otherCache.rows[otherRowIndex].coherencyState = SHARED; 
@@ -258,7 +258,7 @@ class CacheProtocol {
             }
         }
 
-        void handleCacheWriteBack(Cache& cacheRq, int targetCacheRow) {
+        void handleCacheWriteBack(Cache& cacheRq, int32_t targetCacheRow) {
             if (cacheRq.writeBackRow(targetCacheRow)) {
                 // cout << "write-back at row index: " << targetRow << endl;
                 writeBacks++;
@@ -269,7 +269,7 @@ class CacheProtocol {
             
         }
 
-        void handleCacheRowSetting(Cache& cacheRq, string tagBits, bool isInDiffCache, int targetCacheRow) {
+        void handleCacheRowSetting(Cache& cacheRq, string tagBits, bool isInDiffCache, int32_t targetCacheRow) {
             if (isInDiffCache) {
                 cacheRq.setRow(0, tagBits, SHARED, targetCacheRow); //row is shared among caches
                 // cout << "SHARED=========================================" << endl;
@@ -291,7 +291,7 @@ class CacheProtocol {
 
         void printCaches() {
             if (TRACE_OUTPUT_CACHE_PROTOCOL) {
-                for (int i = 0; i < allCaches.size(); i++) {
+                for (int32_t i = 0; i < allCaches.size(); i++) {
                     allCaches[i].printCache();
                 }
             }

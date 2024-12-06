@@ -13,9 +13,9 @@ enum CoherencyState { //use enums because it is gonna get way too complicated if
 
 class Set {
     public:
-        int dirtyBit;
+        int32_t dirtyBit;
         string tagBits;
-        int LRUState; //0 is the OLDEST
+        int32_t LRUState; //0 is the OLDEST
         CoherencyState coherencyState; 
 
         Set() : dirtyBit(0), tagBits("0"), LRUState(0), coherencyState(INVALID) {} //DEFAULT CONSTRUCTOR

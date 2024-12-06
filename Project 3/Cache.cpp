@@ -2,7 +2,7 @@
 
 using namespace std;
 
-static const int ROWS_PER_CORE = 4;
+static const int32_t ROWS_PER_CORE = 4;
 static const bool TRACE_OUTPUT_CACHE = false;
 
 class Cache {
@@ -46,10 +46,10 @@ class Cache {
             // initializeRow(0, "0", INVALID, 3);
         }
 
-        // int findRow(const string tagBits) { //Finds the index of a row with the given tag bits and a valid coherency state
+        // int32_t findRow(const string tagBits) { //Finds the index of a row with the given tag bits and a valid coherency state
         
-        // void setRow(int dirtyBit, string tagBits, int LRUState, CoherencyState coherencyState, int it) {
-        void setRow(int dirtyBit, string tagBits, CoherencyState coherencyState, int indexOfRow) {
+        // void setRow(int32_t dirtyBit, string tagBits, int32_t LRUState, CoherencyState coherencyState, int32_t it) {
+        void setRow(int32_t dirtyBit, string tagBits, CoherencyState coherencyState, int32_t indexOfRow) {
             rows[indexOfRow].dirtyBit = dirtyBit;
             rows[indexOfRow].tagBits = tagBits;
             // rows[indexOfRow].LRUState = LRUState;
@@ -66,14 +66,14 @@ class Cache {
             }
         }
 
-        int findTagRow(string tagBits) { //Finds the index of a row with the given tag bits and a valid coherency state
+        int32_t findTagRow(string tagBits) { //Finds the index of a row with the given tag bits and a valid coherency state
             // for (auto it : rows) { 
             //     if (it.coherencyState != INVALID) {
             //         if (it.tagBits == tagBits) {
             //             cout << "TRIGGER TAGBIT FOUND" << endl;
             //             return &it - &rows[0];
 
-            int i = 0;
+            int32_t i = 0;
             for (auto& r : rows) {
                 if (r.coherencyState != INVALID) {
                     if (r.tagBits == tagBits) {
@@ -93,16 +93,16 @@ class Cache {
             return -1; //NO MATCHING ROW FOUND
         }
 
-        // int findFirstInvalidRow() { //get first invalid row to boot
+        // int32_t findFirstInvalidRow() { //get first invalid row to boot
         //     printCore();
 
-        //     for (int i = 0; i < rows.size(); i++) {
+        //     for (int32_t i = 0; i < rows.size(); i++) {
         //         if (rows[i].coherencyState == INVALID) { 
 
-        int findBootRow() { //find first row to boot
+        int32_t findBootRow() { //find first row to boot
             printCache();
 
-            for (int i = 0; i < rows.size(); i++) { //find invalid
+            for (int32_t i = 0; i < rows.size(); i++) { //find invalid
                 if (rows[i].coherencyState == INVALID) {
                     // if (TRACE_OUTPUT_CACHE) {
                     //     cout << "INVALID TRIGGER" << endl;
@@ -111,7 +111,7 @@ class Cache {
                 }
             }
 
-            for (int i = 0; i < rows.size(); ++i) { //find oldest/LRU
+            for (int32_t i = 0; i < rows.size(); ++i) { //find oldest/LRU
                 if (rows[i].LRUState == 0) {
                     // if (TRACE_OUTPUT_CACHE) {
                     //     cout << "LRU TRIGGER" << endl;
@@ -126,8 +126,8 @@ class Cache {
             return -1; 
         }
 
-        void resetRow(int indexOfRow) {
-            int oldLRU = rows[indexOfRow].LRUState;
+        void resetRow(int32_t indexOfRow) {
+            int32_t oldLRU = rows[indexOfRow].LRUState;
 
             rows[indexOfRow] = Set();
             rows[indexOfRow].LRUState = oldLRU;
@@ -135,11 +135,11 @@ class Cache {
             adjustLRU(indexOfRow);
         }
 
-        // void initializeRow(int dirtyBit, string tagBits, int LRUState, CoherencyState coherencyState, int indexOfRow) {
+        // void initializeRow(int32_t dirtyBit, string tagBits, int32_t LRUState, CoherencyState coherencyState, int32_t indexOfRow) {
         //     rows[indexOfRow].dirtyBit = dirtyBit;
         // }
 
-        bool writeBackRow(int rowIndex) {
+        bool writeBackRow(int32_t rowIndex) {
             if (rows[rowIndex].coherencyState == MODIFIED) {
                 return true;
             }
@@ -159,8 +159,8 @@ class Cache {
             return false;
         }
 
-        void adjustLRU(int accessedRowIndex) { //KEEP TRACK OF LRU
-            for (int i = 0; i < rows.size(); i++) {
+        void adjustLRU(int32_t accessedRowIndex) { //KEEP TRACK OF LRU
+            for (int32_t i = 0; i < rows.size(); i++) {
                 if (i == accessedRowIndex) { //CANNOT BE OWN ROW
                     continue;
                 } else {
@@ -180,7 +180,7 @@ class Cache {
 
         void printCache() {
             if (TRACE_OUTPUT_CACHE == true) {
-                for (int i = 0; i < rows.size(); i++) {
+                for (int32_t i = 0; i < rows.size(); i++) {
                     cout << "ROW: " << i << "====================" << endl;
                     cout << "dirtyBit: " << rows[i].dirtyBit << endl;
                     cout << "tagBits: " << rows[i].tagBits << endl;
