@@ -26,21 +26,23 @@ int main(int argc, char* argv[]) {
     file.close();
 
     // Extract unique Core IDs
-    unordered_set<string> coreIDSet;
+    unordered_set<string> IDSet;
     for (vector<string>& instruction : instructions)
-        coreIDSet.insert(instruction[0]);
-    vector<string> coreIDs(coreIDSet.begin(), coreIDSet.end());
-    sort(coreIDs.begin(), coreIDs.end());
+        IDSet.insert(instruction[0]);
+    vector<string> IDs(IDSet.begin(), IDSet.end());
+    sort(IDs.begin(), IDs.end());
     
-    Protocol protoc(coreIDs);
+    Protocol protoc(IDs);
     for (vector<string>& instruction : instructions) {
-        string coreID = instruction[0];
+        string ID = instruction[0];
         string instruct = instruction[1];
         string tag = instruction[2];
-        if (instruct == "read")
-            protoc.processRead(coreID, tag);
-        else
-            protoc.processWrite(coreID, tag);
+        if (instruct == "write") {
+            protoc.processWrite(ID, tag);
+        } else {
+            protoc.processRead(ID, tag);
+        }
     }
+
     protoc.printStatistics();
 }

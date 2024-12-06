@@ -17,4 +17,6 @@ class Set {
         string tagBits;
         int LRUState; //can be from 0 to 3
         CoherencyState coherencyState; 
+
+        Set() : dirtyBit(0), tagBits("0"), LRUState(0), coherencyState(INVALID) {}
 };
