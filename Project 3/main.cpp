@@ -1,4 +1,4 @@
-#include "Protocol.cpp"
+#include "CacheProtocol.cpp"
 
 using namespace std;
 
@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     vector<string> IDs(IDSet.begin(), IDSet.end());
     sort(IDs.begin(), IDs.end());
     
-    Protocol protoc(IDs);
+    CacheProtocol protoc(IDs);
     for (vector<string>& instruction : instructions) {
         string ID = instruction[0];
         string instruct = instruction[1];
@@ -44,5 +44,10 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    protoc.printStatistics();
+    cout << protoc.hits << endl;
+    cout << protoc.misses << endl;
+    cout << protoc.writeBacks << endl;
+    cout << protoc.broadcasts << endl;
+    cout << protoc.transfers;
+    // cout << protoc.transfers << endl; //HOLY FCK THIS LINE SCREWED ME UP FOR SO LONG
 }

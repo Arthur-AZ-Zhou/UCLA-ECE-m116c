@@ -3,7 +3,7 @@
 using namespace std;
 
 static const int ROWS_PER_CORE = 4;
-static const int TRACE_OUTPUT_CACHE = false;
+static const bool TRACE_OUTPUT_CACHE = false;
 
 class Cache {
     public:
@@ -48,6 +48,23 @@ class Cache {
 
         // int findRow(const string tagBits) { //Finds the index of a row with the given tag bits and a valid coherency state
         
+        // void setRow(int dirtyBit, string tagBits, int LRUState, CoherencyState coherencyState, int it) {
+        void setRow(int dirtyBit, string tagBits, CoherencyState coherencyState, int indexOfRow) {
+            rows[indexOfRow].dirtyBit = dirtyBit;
+            rows[indexOfRow].tagBits = tagBits;
+            // rows[indexOfRow].LRUState = LRUState;
+            rows[indexOfRow].coherencyState = coherencyState;
+
+            adjustLRU(indexOfRow);
+
+            if (TRACE_OUTPUT_CACHE) {
+                cout << "ROW: " << indexOfRow << "====================" << endl;
+                cout << "dirtyBit: " << rows[indexOfRow].dirtyBit << endl;
+                cout << "tagBits: " << rows[indexOfRow].tagBits << endl;
+                cout << "LRUState: " << rows[indexOfRow].LRUState << endl;
+                cout << "coherencyState: " << rows[indexOfRow].coherencyState << endl;
+            }
+        }
 
         int findTagRow(string tagBits) { //Finds the index of a row with the given tag bits and a valid coherency state
             // for (auto it : rows) { 
@@ -76,6 +93,12 @@ class Cache {
             return -1; //NO MATCHING ROW FOUND
         }
 
+        // int findFirstInvalidRow() { //get first invalid row to boot
+        //     printCore();
+
+        //     for (int i = 0; i < rows.size(); i++) {
+        //         if (rows[i].coherencyState == INVALID) { 
+
         int findBootRow() { //find first row to boot
             printCache();
 
@@ -103,12 +126,18 @@ class Cache {
             return -1; 
         }
 
-        // int findFirstInvalidRow() { //get first invalid row to boot
-        //     printCore();
+        void resetRow(int indexOfRow) {
+            int oldLRU = rows[indexOfRow].LRUState;
 
-        //     for (int i = 0; i < rows.size(); i++) {
-        //         if (rows[i].coherencyState == INVALID) {
-                 
+            rows[indexOfRow] = Set();
+            rows[indexOfRow].LRUState = oldLRU;
+
+            adjustLRU(indexOfRow);
+        }
+
+        // void initializeRow(int dirtyBit, string tagBits, int LRUState, CoherencyState coherencyState, int indexOfRow) {
+        //     rows[indexOfRow].dirtyBit = dirtyBit;
+        // }
 
         bool writeBackRow(int rowIndex) {
             if (rows[rowIndex].coherencyState == MODIFIED) {
@@ -148,37 +177,6 @@ class Cache {
             printCache();
             rows[accessedRowIndex].LRUState = rows.size() - 1;
         }
-
-        // void setRow(int dirtyBit, string tagBits, int LRUState, CoherencyState coherencyState, int it) {
-        void setRow(int dirtyBit, string tagBits, CoherencyState coherencyState, int indexOfRow) {
-            rows[indexOfRow].dirtyBit = dirtyBit;
-            rows[indexOfRow].tagBits = tagBits;
-            // rows[indexOfRow].LRUState = LRUState;
-            rows[indexOfRow].coherencyState = coherencyState;
-
-            adjustLRU(indexOfRow);
-
-            if (TRACE_OUTPUT_CACHE) {
-                cout << "ROW: " << indexOfRow << "====================" << endl;
-                cout << "dirtyBit: " << rows[indexOfRow].dirtyBit << endl;
-                cout << "tagBits: " << rows[indexOfRow].tagBits << endl;
-                cout << "LRUState: " << rows[indexOfRow].LRUState << endl;
-                cout << "coherencyState: " << rows[indexOfRow].coherencyState << endl;
-            }
-        }
-
-        void resetRow(int indexOfRow) {
-            int oldLRU = rows[indexOfRow].LRUState;
-
-            rows[indexOfRow] = Set();
-            rows[indexOfRow].LRUState = oldLRU;
-
-            adjustLRU(indexOfRow);
-        }
-
-        // void initializeRow(int dirtyBit, string tagBits, int LRUState, CoherencyState coherencyState, int indexOfRow) {
-        //     rows[indexOfRow].dirtyBit = dirtyBit;
-        // }
 
         void printCache() {
             if (TRACE_OUTPUT_CACHE == true) {

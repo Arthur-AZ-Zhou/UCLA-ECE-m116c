@@ -2,7 +2,7 @@
 
 using namespace std;
 
-enum CoherencyState {
+enum CoherencyState { //use enums because it is gonna get way too complicated if we just keep track of the chars
     MODIFIED = 'M',
     OWNED = 'O',
     EXCLUSIVE = 'E',
@@ -15,8 +15,8 @@ class Set {
     public:
         int dirtyBit;
         string tagBits;
-        int LRUState; //can be from 0 to 3
+        int LRUState; //0 is the OLDEST
         CoherencyState coherencyState; 
 
-        Set() : dirtyBit(0), tagBits("0"), LRUState(0), coherencyState(INVALID) {}
+        Set() : dirtyBit(0), tagBits("0"), LRUState(0), coherencyState(INVALID) {} //DEFAULT CONSTRUCTOR
 };
