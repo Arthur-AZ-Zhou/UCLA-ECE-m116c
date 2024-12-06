@@ -39,7 +39,7 @@ class Protocol {
                     continue;
                 } else {
                     Cache& curCore = cores[i];
-                    int rowIndex = curCore.findRow(tag);
+                    int rowIndex = curCore.findTagRow(tag);
 
                     if (rowIndex != -1) {
                         curCore.resetRow(rowIndex);
@@ -50,7 +50,7 @@ class Protocol {
 
         void transitionState(int coreIndex, string tag, CoherencyState newState) {
             Cache& core = cores[coreIndex];
-            int rowIndex = core.findRow(tag);
+            int rowIndex = core.findTagRow(tag);
             if (rowIndex != -1) {
                 core.rows[rowIndex].coherencyState = newState;
             }
@@ -62,7 +62,7 @@ class Protocol {
             Cache& requestingCache = cores[coreIndex];
 
             // Step 2: Check if the tag/Row exists in the requesting cache
-            int rowIndex = requestingCache.findRow(tag);
+            int rowIndex = requestingCache.findTagRow(tag);
             if (rowIndex != -1) {
                 // Tag/Row found in cache
                 cacheHits++;
@@ -71,7 +71,7 @@ class Protocol {
                 if (state != EXCLUSIVE) {
                     broadcasts++; // Broadcast occurs unless the state is Exclusive (E) per Nader
                 }
-                requestingCache.updateLRU(rowIndex);
+                requestingCache.adjustLRU(rowIndex);
                 
                 return;
             }
@@ -87,7 +87,7 @@ class Protocol {
                     continue;
                 } else {
                     Cache& otherCache = cores[i];
-                    int otherRowIndex = otherCache.findRow(tag);
+                    int otherRowIndex = otherCache.findTagRow(tag);
                     if (otherRowIndex != -1) {
                         char otherState = otherCache.rows[otherRowIndex].coherencyState;
                         if (otherState == MODIFIED || otherState == OWNED) {
@@ -105,23 +105,29 @@ class Protocol {
                 }
             }
 
-            // Step 4: Install the Row in the requesting cache
-            int targetRow = requestingCache.findFirstInvalidRow();
-            if (targetRow == -1) {
-                // Need to evict a Row
-                targetRow = requestingCache.findLRURow();
-                if (requestingCache.rowNeedsWriteBack(targetRow)) {
-                    writebacks++;
-                }
+            // // Step 4: Install the Row in the requesting cache
+            // int targetRow = requestingCache.findFirstInvalidRow();
+            // if (targetRow == -1) {
+            //     // Need to evict a Row
+            //     targetRow = requestingCache.findOldestRow();
+            //     if (requestingCache.rowNeedsWriteBack(targetRow)) {
+            //         writebacks++;
+            //     }
+            // }
+
+            int targetRow = requestingCache.findBootRow();
+
+            if (requestingCache.writeBackRow(targetRow)) {
+                writebacks++;
             }
 
             // Set state based on whether other caches have the Row
             if (foundInOtherCache) {
                 // Row is shared among caches
-                requestingCache.installRow(targetRow, SHARED, tag, false);
+                requestingCache.setRow(0, tag, SHARED, targetRow);
                 cacheToCacheTransfers++;
             } else
-                requestingCache.installRow(targetRow, EXCLUSIVE, tag, false); // Row is exclusive to requesting cache
+                requestingCache.setRow(0, tag, EXCLUSIVE, targetRow); // Row is exclusive to requesting cache
         }
 
         void processWrite(string ID, string tag) {
@@ -130,7 +136,7 @@ class Protocol {
             Cache& requestingCache = cores[coreIndex];
 
             // Step 2: Check if the tag/Row exists in the requesting cache
-            int rowIndex = requestingCache.findRow(tag);
+            int rowIndex = requestingCache.findTagRow(tag);
             if (rowIndex != -1) {
                 // Tag/Row found in cache
                 char state = requestingCache.rows[rowIndex].coherencyState;
@@ -141,7 +147,7 @@ class Protocol {
                 // Update state
                 invalidateOtherCores(rowIndex, tag);
                 requestingCache.rows[rowIndex].coherencyState = MODIFIED;
-                requestingCache.updateLRU(rowIndex);
+                requestingCache.adjustLRU(rowIndex);
                 return;
             }
 
@@ -157,7 +163,7 @@ class Protocol {
                 } else {
 
                     Cache& otherCache = cores[i];
-                    int otherRowIndex = otherCache.findRow(tag);
+                    int otherRowIndex = otherCache.findTagRow(tag);
                     if (otherRowIndex != -1) {
                         char otherState = otherCache.rows[otherRowIndex].coherencyState;
                         if (otherState == MODIFIED || otherState == OWNED) {
@@ -171,16 +177,22 @@ class Protocol {
             }
 
             // Step 4: Install the Row in the requesting cache
-            int targetRow = requestingCache.findFirstInvalidRow();
-            if (targetRow == -1) {
-                // Need to evict a Row
-                targetRow = requestingCache.findLRURow();
-                if (requestingCache.rowNeedsWriteBack(targetRow)) {
-                    writebacks++;
-                }
+            // int targetRow = requestingCache.findFirstInvalidRow();
+            // if (targetRow == -1) {
+            //     // Need to evict a Row
+            //     targetRow = requestingCache.findOldestRow();
+            //     if (requestingCache.rowNeedsWriteBack(targetRow)) {
+            //         writebacks++;
+            //     }
+            // }
+
+            int targetRow = requestingCache.findBootRow();
+
+            if (requestingCache.writeBackRow(targetRow)) {
+                writebacks++;
             }
 
-            requestingCache.installRow(targetRow, MODIFIED, tag, true); // Set state to Modified (M) since we're writing
+            requestingCache.setRow(1, tag, MODIFIED, targetRow); // Set state to Modified (M) since we're writing
         }
         
         // Final behavior

@@ -12,103 +12,175 @@ class Cache {
 
         Cache(string id){
             ID = id;
-            Set defaultSet; // Calls the default constructor
+            Set defaultSet; //calls default constructor
             rows = vector<Set>(ROWS_PER_CORE, defaultSet);
 
-            installRow(0, INVALID, "0", false);
-            installRow(1, INVALID, "0", false);
-            installRow(2, INVALID, "0", false);
-            installRow(3, INVALID, "0", false);
+            rows.clear(); // Ensure rows vector is empty
+            rows.push_back(Set()); // Default constructor for row 0
+            rows.back().dirtyBit = 0;
+            rows.back().tagBits = "0";
+            rows.back().LRUState = 0;
+            rows.back().coherencyState = INVALID;
+
+            rows.push_back(Set()); // Default constructor for row 1
+            rows.back().dirtyBit = 0;
+            rows.back().tagBits = "0";
+            rows.back().LRUState = 0;
+            rows.back().coherencyState = INVALID;
+
+            rows.push_back(Set()); // Default constructor for row 2
+            rows.back().dirtyBit = 0;
+            rows.back().tagBits = "0";
+            rows.back().LRUState = 0;
+            rows.back().coherencyState = INVALID;
+
+            rows.push_back(Set()); // Default constructor for row 3
+            rows.back().dirtyBit = 0;
+            rows.back().tagBits = "0";
+            rows.back().LRUState = 0;
+            rows.back().coherencyState = INVALID;
+
+            // initializeRow(0, "0", INVALID, 0);
+            // initializeRow(0, "0", INVALID, 1);
+            // initializeRow(0, "0", INVALID, 2);
+            // initializeRow(0, "0", INVALID, 3);
         }
 
-        bool isCacheFull() {
-            for (int i = 0; i < rows.size(); i++) {
+        // int findRow(const string tagBits) { //Finds the index of a row with the given tag bits and a valid coherency state
+        
+
+        int findTagRow(string tagBits) { //Finds the index of a row with the given tag bits and a valid coherency state
+            // for (auto it : rows) { 
+            //     if (it.coherencyState != INVALID) {
+            //         if (it.tagBits == tagBits) {
+            //             cout << "TRIGGER TAGBIT FOUND" << endl;
+            //             return &it - &rows[0];
+
+            int i = 0;
+            for (auto& r : rows) {
+                if (r.coherencyState != INVALID) {
+                    if (r.tagBits == tagBits) {
+                        if (TRACE_OUTPUT_CACHE == true) {
+                            cout << "ith tagbit found: " << i << endl;
+                        }
+
+                        return i;
+                    }
+                }
+
+                i++;
+            }
+
+            // printCache();
+
+            return -1; //NO MATCHING ROW FOUND
+        }
+
+        int findBootRow() { //find first row to boot
+            printCache();
+
+            for (int i = 0; i < rows.size(); i++) { //find invalid
                 if (rows[i].coherencyState == INVALID) {
-                    return false;
+                    // if (TRACE_OUTPUT_CACHE) {
+                    //     cout << "INVALID TRIGGER" << endl;
+                    // }
+                    return i; 
                 }
             }
 
-            return true;
-        }
-
-        // Find valid Row with given tagBitsz
-        int findRow(string tagBits) {
-            for (int i = 0; i < rows.size(); i++) {
-                if (rows[i].tagBits == tagBits && rows[i].coherencyState != INVALID) {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        // Find first invalid Row for replacement
-        int findFirstInvalidRow() {
-            for (int i = 0; i < rows.size(); i++) {
-                if (rows[i].coherencyState == INVALID) {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        // Find LRU Row when no invalid Row exists
-        int findLRURow() {
-            int LRUindex = 0;
-            for (int i = 0; i < rows.size(); i++) {
+            for (int i = 0; i < rows.size(); ++i) { //find oldest/LRU
                 if (rows[i].LRUState == 0) {
-                    LRUindex = i;
-                    break;
+                    // if (TRACE_OUTPUT_CACHE) {
+                    //     cout << "LRU TRIGGER" << endl;
+                    // }
+                    return i; 
                 }
             }
 
-            return LRUindex;
+            if (TRACE_OUTPUT_CACHE) {
+                cout << "WE SHOULD NEVER GET HERE" << endl;
+            } 
+            return -1; 
         }
 
-        // Returns true if Row needs write back
-        bool rowNeedsWriteBack(int rowIndex) {
-            return rows[rowIndex].coherencyState == MODIFIED || rows[rowIndex].coherencyState == OWNED || rows[rowIndex].dirtyBit;
+        // int findFirstInvalidRow() { //get first invalid row to boot
+        //     printCore();
+
+        //     for (int i = 0; i < rows.size(); i++) {
+        //         if (rows[i].coherencyState == INVALID) {
+                 
+
+        bool writeBackRow(int rowIndex) {
+            if (rows[rowIndex].coherencyState == MODIFIED) {
+                return true;
+            }
+
+            if (rows[rowIndex].coherencyState == OWNED) {
+                if (TRACE_OUTPUT_CACHE) {
+                    cout << "OWNED TRIGGER" << endl;
+                }
+
+                return true;
+            }
+
+            if (rows[rowIndex].dirtyBit == true) {
+                return true;
+            }
+
+            return false;
         }
 
-        // Update LRU when a Row is accessed
-        void updateLRU(int accessedRowIndex) {
-            // Decrement LRU counters of non-accessed Rows
-            int curAccessedLRUState = rows[accessedRowIndex].LRUState;
+        void adjustLRU(int accessedRowIndex) { //KEEP TRACK OF LRU
             for (int i = 0; i < rows.size(); i++) {
-                if (i != accessedRowIndex && rows[i].LRUState > curAccessedLRUState) {
-                    rows[i].LRUState--;
+                if (i == accessedRowIndex) { //CANNOT BE OWN ROW
+                    continue;
+                } else {
+                    if (rows[accessedRowIndex].LRUState < rows[i].LRUState) { //check if LRU is greater than the accessed row's LRU
+                        if (TRACE_OUTPUT_CACHE) {
+                            cout << "adjusted row: " << i << endl;
+                        }
+
+                        rows[i].LRUState--;
+                    }
                 }
             }
-            // Set accessed Row to MRU
-            rows[accessedRowIndex].LRUState = ROWS_PER_CORE - 1;
+
+            printCache();
+            rows[accessedRowIndex].LRUState = rows.size() - 1;
         }
 
-        // Install new Row at given index
-        void installRow(int rowIndex, CoherencyState coherencyState, string tagBits, int dirtyBit) {
-            rows[rowIndex].coherencyState = coherencyState;
-            rows[rowIndex].tagBits = tagBits;
-            rows[rowIndex].dirtyBit = dirtyBit;
-            updateLRU(rowIndex);
-        }
+        // void setRow(int dirtyBit, string tagBits, int LRUState, CoherencyState coherencyState, int it) {
+        void setRow(int dirtyBit, string tagBits, CoherencyState coherencyState, int indexOfRow) {
+            rows[indexOfRow].dirtyBit = dirtyBit;
+            rows[indexOfRow].tagBits = tagBits;
+            // rows[indexOfRow].LRUState = LRUState;
+            rows[indexOfRow].coherencyState = coherencyState;
 
-        // Reset Row at given index
-        void resetRow(int rowIndex) {
-            rows[rowIndex].coherencyState = INVALID;
-            rows[rowIndex].tagBits = "0";
-            rows[rowIndex].dirtyBit = 0;
-            updateLRU(rowIndex);
-        }
+            adjustLRU(indexOfRow);
 
-        // Does the same as resetRow, more of an API thing
-        void invalidateRow(string tagBits) {
-            int rowIndex = findRow(tagBits);
-            if (rowIndex != -1) {
-                resetRow(rowIndex);
+            if (TRACE_OUTPUT_CACHE) {
+                cout << "ROW: " << indexOfRow << "====================" << endl;
+                cout << "dirtyBit: " << rows[indexOfRow].dirtyBit << endl;
+                cout << "tagBits: " << rows[indexOfRow].tagBits << endl;
+                cout << "LRUState: " << rows[indexOfRow].LRUState << endl;
+                cout << "coherencyState: " << rows[indexOfRow].coherencyState << endl;
             }
         }
 
-        void printCore() {
+        void resetRow(int indexOfRow) {
+            int oldLRU = rows[indexOfRow].LRUState;
+
+            rows[indexOfRow] = Set();
+            rows[indexOfRow].LRUState = oldLRU;
+
+            adjustLRU(indexOfRow);
+        }
+
+        // void initializeRow(int dirtyBit, string tagBits, int LRUState, CoherencyState coherencyState, int indexOfRow) {
+        //     rows[indexOfRow].dirtyBit = dirtyBit;
+        // }
+
+        void printCache() {
             if (TRACE_OUTPUT_CACHE == true) {
                 for (int i = 0; i < rows.size(); i++) {
                     cout << "ROW: " << i << "====================" << endl;
@@ -117,6 +189,8 @@ class Cache {
                     cout << "LRUState: " << rows[i].LRUState << endl;
                     cout << "coherencyState: " << rows[i].coherencyState << endl;
                 }
+                
+                cout << endl;
             }
         }
 };
